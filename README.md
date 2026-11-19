@@ -8,7 +8,8 @@ neighbouring system once the tank holds the system's jump cost.
 
 ```shell
 nix develop                      # Godot .NET, .NET 8 SDK, uv
-godot-mono --path .              # play
+dotnet build                     # compile C# (after checkout and every code change)
+godot-mono --path .              # play; or `godot-mono -e --path .` for the editor (F5 runs)
 godot-mono --headless --path . -- --self-test   # rules + scene checks, exit 1 on failure
 ```
 
