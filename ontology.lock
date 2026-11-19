@@ -1,0 +1,7 @@
+# Ontology release the domain code is generated from, and the tools that do it.
+# Bump ONTOLOGY_REF, run tools/sync-ontology.sh, fix the bindings, commit.
+ONTOLOGY_REPO=https://github.com/M4jor-Tom/starflake-ontology.git
+ONTOLOGY_REF=v0.2.0
+# ponytail: generator unpinned until linkml-csharp has a release tag; append @<tag> then.
+LINKML_CSHARP=git+https://github.com/M4jor-Tom/linkml-csharp
+LINKML_VERSION=1.12.1
