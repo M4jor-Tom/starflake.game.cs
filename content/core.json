@@ -1,0 +1,177 @@
+{
+  "id": "core",
+  "name": "Starflake core content",
+  "starting_ship_class": "scout",
+  "weapon_types": [
+    {
+      "id": "pulse_laser",
+      "name": "Pulse laser",
+      "damage": 10,
+      "fire_rate": 5,
+      "projectile_speed": 900,
+      "max_range": 1200
+    },
+    {
+      "id": "pirate_blaster",
+      "name": "Pirate blaster",
+      "damage": 6,
+      "fire_rate": 1.5,
+      "projectile_speed": 500,
+      "max_range": 900
+    },
+    {
+      "id": "heavy_cannon",
+      "name": "Heavy cannon",
+      "damage": 15,
+      "fire_rate": 1,
+      "projectile_speed": 450,
+      "max_range": 1100
+    }
+  ],
+  "ship_classes": [
+    {
+      "id": "scout",
+      "name": "Scout",
+      "max_hull": 100,
+      "max_speed": 260,
+      "acceleration": 120,
+      "turn_rate": 1.8,
+      "fuel_capacity": 150,
+      "weapons": ["pulse_laser"]
+    },
+    {
+      "id": "raider",
+      "name": "Raider",
+      "max_hull": 40,
+      "max_speed": 180,
+      "acceleration": 70,
+      "turn_rate": 1.1,
+      "fuel_capacity": 0,
+      "weapons": ["pirate_blaster"]
+    },
+    {
+      "id": "gunship",
+      "name": "Gunship",
+      "max_hull": 120,
+      "max_speed": 140,
+      "acceleration": 50,
+      "turn_rate": 0.8,
+      "fuel_capacity": 0,
+      "weapons": ["heavy_cannon", "pirate_blaster"]
+    }
+  ],
+  "enemy_types": [
+    {
+      "id": "pirate",
+      "name": "Pirate",
+      "ship_class": "raider",
+      "detection_range": 800,
+      "fuel_drop": 15
+    },
+    {
+      "id": "enforcer",
+      "name": "Enforcer",
+      "ship_class": "gunship",
+      "detection_range": 1000,
+      "fuel_drop": 40
+    }
+  ],
+  "asteroid_types": [
+    {
+      "id": "ice_rock",
+      "name": "Ice rock",
+      "radius": 20,
+      "max_integrity": 40,
+      "fuel_drop": 10
+    },
+    {
+      "id": "comet_core",
+      "name": "Comet core",
+      "radius": 35,
+      "max_integrity": 120,
+      "fuel_drop": 30
+    }
+  ],
+  "galaxy": {
+    "id": "local_cluster",
+    "name": "Local cluster",
+    "starting_system": "sol",
+    "star_systems": [
+      {
+        "id": "sol",
+        "name": "Sol",
+        "star_class": "g",
+        "bounds_radius": 5000,
+        "jump_fuel_cost": 60,
+        "jump_targets": ["alpha_centauri", "barnards_star"],
+        "asteroid_fields": [
+          {"asteroid_type": "ice_rock", "center": {"x": 600, "y": 0, "z": -900}, "radius": 350, "spawn_count": 10}
+        ],
+        "enemy_groups": [
+          {"enemy_type": "pirate", "center": {"x": -900, "y": 100, "z": -1400}, "radius": 200, "spawn_count": 2}
+        ]
+      },
+      {
+        "id": "alpha_centauri",
+        "name": "Alpha Centauri",
+        "star_class": "k",
+        "bounds_radius": 6000,
+        "jump_fuel_cost": 90,
+        "jump_targets": ["sol", "sirius"],
+        "asteroid_fields": [
+          {"asteroid_type": "ice_rock", "center": {"x": -700, "y": -100, "z": -1000}, "radius": 400, "spawn_count": 8},
+          {"asteroid_type": "comet_core", "center": {"x": 1200, "y": 200, "z": -1800}, "radius": 300, "spawn_count": 3}
+        ],
+        "enemy_groups": [
+          {"enemy_type": "pirate", "center": {"x": 0, "y": 0, "z": -1600}, "radius": 300, "spawn_count": 4}
+        ]
+      },
+      {
+        "id": "barnards_star",
+        "name": "Barnard's Star",
+        "star_class": "m",
+        "bounds_radius": 5000,
+        "jump_fuel_cost": 90,
+        "jump_targets": ["sol", "sirius"],
+        "asteroid_fields": [
+          {"asteroid_type": "comet_core", "center": {"x": 800, "y": 0, "z": -1200}, "radius": 350, "spawn_count": 5}
+        ],
+        "enemy_groups": [
+          {"enemy_type": "pirate", "center": {"x": -600, "y": 0, "z": -1500}, "radius": 250, "spawn_count": 3},
+          {"enemy_type": "enforcer", "center": {"x": 1000, "y": 100, "z": -2200}, "radius": 150, "spawn_count": 1}
+        ]
+      },
+      {
+        "id": "sirius",
+        "name": "Sirius",
+        "star_class": "a",
+        "bounds_radius": 7000,
+        "jump_fuel_cost": 120,
+        "jump_targets": ["alpha_centauri", "barnards_star", "rigel"],
+        "asteroid_fields": [
+          {"asteroid_type": "ice_rock", "center": {"x": 0, "y": 300, "z": -1200}, "radius": 500, "spawn_count": 8},
+          {"asteroid_type": "comet_core", "center": {"x": -1500, "y": 0, "z": -2000}, "radius": 400, "spawn_count": 4}
+        ],
+        "enemy_groups": [
+          {"enemy_type": "pirate", "center": {"x": 900, "y": 0, "z": -1500}, "radius": 300, "spawn_count": 4},
+          {"enemy_type": "enforcer", "center": {"x": -800, "y": 0, "z": -2400}, "radius": 250, "spawn_count": 2}
+        ]
+      },
+      {
+        "id": "rigel",
+        "name": "Rigel",
+        "star_class": "b",
+        "bounds_radius": 8000,
+        "jump_fuel_cost": 150,
+        "jump_targets": ["sirius"],
+        "asteroid_fields": [
+          {"asteroid_type": "comet_core", "center": {"x": 0, "y": 0, "z": -1500}, "radius": 600, "spawn_count": 8}
+        ],
+        "enemy_groups": [
+          {"enemy_type": "enforcer", "center": {"x": 1200, "y": 200, "z": -2000}, "radius": 300, "spawn_count": 4},
+          {"enemy_type": "pirate", "center": {"x": -1200, "y": -200, "z": -2000}, "radius": 300, "spawn_count": 6}
+        ]
+      }
+    ]
+  }
+}
