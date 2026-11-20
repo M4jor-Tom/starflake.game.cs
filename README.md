@@ -29,7 +29,7 @@ Tab next jump target · J jump.
 ## Ontology
 
 The domain model lives in the separate
-[starflake-ontology](https://github.com/M4jor-Tom/starflake-ontology) repository.
+[starflake.ontology.linkml](https://github.com/M4jor-Tom/starflake.ontology.linkml) repository.
 `ontology.lock` pins a release tag. To upgrade:
 
 1. bump `ONTOLOGY_REF` in `ontology.lock`;
