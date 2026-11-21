@@ -7,7 +7,7 @@ namespace Starflake.Game;
 
 /// <summary>
 /// Shows the simulation's open menu in a centred panel: its title and one button per menu button, in order.
-/// Pressing one raises <see cref="Chosen"/> with the button's id.
+/// Pressing one raises <see cref="Chosen"/> with the button's id, which is also the node's name.
 /// </summary>
 public partial class PauseMenu : CanvasLayer
 {
@@ -42,7 +42,7 @@ public partial class PauseMenu : CanvasLayer
         panel.AddChild(new Label { Text = menu.Title, HorizontalAlignment = HorizontalAlignment.Center });
         foreach (var button in menu.Buttons)
         {
-            var node = new Button { Text = button.Label };
+            var node = new Button { Name = button.Id, Text = button.Label };
             node.Pressed += () => Chosen?.Invoke(button.Id);
             panel.AddChild(node);
             _first ??= node;

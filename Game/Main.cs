@@ -11,13 +11,14 @@ namespace Starflake.Game;
 
 /// <summary>
 /// Loads the content and the spec, runs the simulation one step per physics frame and draws it.
-/// With the user argument <c>--boot-check</c> it also opens and closes the pause menu, then quits;
-/// any failure prints and exits 1.
+/// With the user argument <c>--boot-check</c> it also opens and closes the pause menu, opens it again and
+/// quits through its quit button; any failure prints and exits 1.
 /// </summary>
 public partial class Main : Node3D
 {
     const string BootCheckArgument = "--boot-check";
     const int BootCheckFrames = 30;
+    const string QuitButton = "quit";
 
     readonly StarSystemView _view = new();
     readonly ChaseCamera _camera = new();
@@ -58,7 +59,11 @@ public partial class Main : Node3D
         _sim.Step((float)delta, InputMapper.Read(_sim.Spec.Controls));
         Refresh();
         if (_sim.QuitRequested)
-            GetTree().Quit();
+        {
+            if (_bootCheck)
+                GD.Print("boot check passed"); // the quit button was the check's last step
+            GetTree().Quit(0);
+        }
         else if (_bootCheck)
             BootCheck();
     });
@@ -78,22 +83,32 @@ public partial class Main : Node3D
         _menu.Refresh(_sim);
     }
 
-    // Boots, lets the session run, then presses pause twice through the input pipeline. It asserts no gameplay.
+    // Boots, lets the session run, presses pause three times through the input pipeline, then the menu's quit
+    // button, whose choice quits the game in the next frame. It asserts no gameplay.
     void BootCheck()
     {
-        _frames++;
-        if (_frames == BootCheckFrames)
-            PressPause();
-        else if (_frames == BootCheckFrames + 1)
+        switch (++_frames - BootCheckFrames)
         {
-            Check(_sim.OpenMenu != null && _menu.Visible, "pause opens the pause menu");
-            PressPause();
-        }
-        else if (_frames > BootCheckFrames + 1)
-        {
-            Check(_sim.OpenMenu == null && !_menu.Visible, "pause again closes it");
-            GD.Print("boot check passed");
-            GetTree().Quit(0);
+            case 0:
+                PressPause();
+                break;
+            case 1:
+                Check(_sim.OpenMenu != null && _menu.Visible, "pause opens the pause menu");
+                PressPause();
+                break;
+            case 2:
+                Check(_sim.OpenMenu == null && !_menu.Visible, "pause again closes it");
+                PressPause();
+                break;
+            case 3:
+                Check(_sim.OpenMenu != null && _menu.Visible, "pause opens it once more");
+                var quit = _menu.FindChild(QuitButton, owned: false) as Button;
+                Check(quit != null, "the pause menu has a quit button");
+                quit!.EmitSignal(BaseButton.SignalName.Pressed);
+                break;
+            case > 3:
+                Check(false, "the quit button quits the game");
+                break;
         }
     }
 

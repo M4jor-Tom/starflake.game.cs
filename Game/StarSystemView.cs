@@ -10,7 +10,6 @@ namespace Starflake.Game;
 /// <summary>The star system the pilot ship is in: its star and one node per ship, asteroid, fuel pod and projectile.</summary>
 public partial class StarSystemView : Node3D
 {
-    readonly Random _rng = new();
     readonly Dictionary<object, Node3D> _nodes = new(ReferenceEqualityComparer.Instance);
     readonly Dictionary<Node3D, Vector3> _spins = []; // cosmetic tumbles, by the mesh that turns
     StarSystemState? _shown;
@@ -24,6 +23,8 @@ public partial class StarSystemView : Node3D
             Drop(gone);
         foreach (var entity in entities)
             Place(_nodes.TryGetValue(entity, out var node) ? node : Add(entity), entity);
+        if (sim.OpenMenu != null)
+            return; // paused: nothing turns
         var dt = (float)GetPhysicsProcessDeltaTime();
         foreach (var (mesh, spin) in _spins)
             mesh.Rotate(spin.Normalized(), spin.Length() * dt);
@@ -59,7 +60,8 @@ public partial class StarSystemView : Node3D
                 node.AddChild(Scenery.RaiderMarker());
                 break;
             case Asteroid asteroid:
-                node.AddChild(Spinning(Scenery.Asteroid(asteroid.AsteroidType, _rng), Scenery.AsteroidSpin(_rng)));
+                var rng = new Random(StableHash(asteroid.Id)); // the same shape and tumble on every visit
+                node.AddChild(Spinning(Scenery.Asteroid(asteroid.AsteroidType, rng), Scenery.AsteroidSpin(rng)));
                 break;
             case FuelPod:
                 node.AddChild(Spinning(Scenery.FuelPod(), Scenery.FuelPodSpin));
@@ -79,6 +81,10 @@ public partial class StarSystemView : Node3D
         return mesh;
     }
 
+    // string.GetHashCode differs between runs; this does not.
+    static int StableHash(string id) => id.Aggregate(17, (hash, c) => unchecked(hash * 31 + c));
+
+    // A projectile gone short of its weapon's range hit something: it leaves a spark where it ended.
     void Drop(object entity)
     {
         var node = _nodes[entity];
@@ -86,6 +92,8 @@ public partial class StarSystemView : Node3D
         foreach (var mesh in node.GetChildren().OfType<Node3D>())
             _spins.Remove(mesh);
         node.QueueFree();
+        if (entity is Projectile p && p.Origin.DistanceTo(p.Position) <= p.Weapon.MaxRange)
+            Scenery.Spark(this, p.Position);
     }
 
     static void Place(Node3D node, object entity)

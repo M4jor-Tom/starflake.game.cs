@@ -28,13 +28,8 @@ public static class InputMapper
         [PhysicalKey.Escape] = Key.Escape,
     };
 
-    static readonly Dictionary<SpecButton, GodotButton> Buttons = new()
-    {
-        [SpecButton.Left] = GodotButton.Left,
-    };
-
     /// <summary>Adds one input action per spec action, with an event per binding.</summary>
-    /// <exception cref="InvalidDataException">A binding names a key or button the tables above lack.</exception>
+    /// <exception cref="InvalidDataException">A binding names a key or button not mapped here.</exception>
     public static void Register(ControlScheme controls)
     {
         foreach (var action in controls.Actions)
@@ -54,8 +49,8 @@ public static class InputMapper
         { Key: { } key } => new InputEventKey { PhysicalKeycode = KeyOf(key) },
         { Button: { } button } => new InputEventMouseButton
         {
-            ButtonIndex = Buttons.TryGetValue(button, out var index)
-                ? index
+            ButtonIndex = button == SpecButton.Left
+                ? GodotButton.Left
                 : throw new InvalidDataException($"controls.json: no Godot mouse button for '{button}'"),
         },
         _ => throw new InvalidDataException($"controls.json: a {binding.Device} binding without a key or button"),

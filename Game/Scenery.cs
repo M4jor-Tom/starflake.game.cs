@@ -16,6 +16,7 @@ public static class Scenery
     static readonly Mesh FuelPodMesh = new BoxMesh { Size = new Vector3(6, 6, 6), Material = Glow(new Color(0.3f, 1f, 0.5f)) };
     static readonly Mesh PilotBolt = new BoxMesh { Size = new Vector3(0.6f, 0.6f, 10), Material = Glow(new Color(1f, 0.9f, 0.3f)) };
     static readonly Mesh RaiderBolt = new BoxMesh { Size = new Vector3(0.8f, 0.8f, 8), Material = Glow(new Color(1f, 0.25f, 0.2f)) };
+    static readonly Mesh SparkMesh = new SphereMesh { Radius = 4, Height = 8, Material = Glow(new Color(1f, 0.8f, 0.5f)) };
 
     /// <summary>How fast a fuel pod turns about its up axis, in radians per second.</summary>
     public static readonly Vector3 FuelPodSpin = 2 * Vector3.Up;
@@ -94,6 +95,14 @@ public static class Scenery
     public static MeshInstance3D FuelPod() => new() { Mesh = FuelPodMesh };
 
     public static MeshInstance3D Bolt(bool byPilot) => new() { Mesh = byPilot ? PilotBolt : RaiderBolt };
+
+    /// <summary>A flash that frees itself an instant after it is added.</summary>
+    public static void Spark(Node parent, Vector3 at)
+    {
+        var spark = new MeshInstance3D { Mesh = SparkMesh, Position = at };
+        parent.AddChild(spark);
+        spark.CreateTween().TweenCallback(Callable.From(spark.QueueFree)).SetDelay(0.12);
+    }
 
     /// <summary>A HUD text placed on the whole screen at an alignment, outlined so it reads over the star.</summary>
     public static Label HudLabel(HorizontalAlignment horizontal, VerticalAlignment vertical)
