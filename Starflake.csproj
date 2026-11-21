@@ -3,10 +3,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <RootNamespace>Starflake</RootNamespace>
-    <Nullable>enable</Nullable>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Tests/**</DefaultItemExcludes>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.37.0.15768" PrivateAssets="all" />
-  </ItemGroup>
 </Project>

@@ -7,19 +7,19 @@ namespace Starflake.Game;
 /// <summary>Greybox visuals built from primitive meshes; swap for real assets later.</summary>
 public static class Scenery
 {
-    /// <summary>Hit radius of every ship, matching <see cref="ShipMesh"/>.</summary>
-    public const float ShipRadius = 12;
-
-    public static readonly Color EnemyColor = new(1f, 0.35f, 0.2f);
+    public static readonly Color RaiderColor = new(1f, 0.35f, 0.2f);
 
     static readonly Mesh ShipMesh = new PrismMesh { Size = new Vector3(8, 20, 4) };
-    static readonly Material PlayerHull = Lit(new Color(0.3f, 0.85f, 1f));
-    static readonly Material EnemyHull = Lit(EnemyColor);
+    static readonly Material PilotHull = Lit(new Color(0.3f, 0.85f, 1f));
+    static readonly Material RaiderHull = Lit(RaiderColor);
     static readonly Mesh RockMesh = new SphereMesh { Radius = 1, Height = 2, RadialSegments = 8, Rings = 5, Material = Lit(new Color(0.45f, 0.42f, 0.4f)) };
-    static readonly Mesh LootMesh = new BoxMesh { Size = new Vector3(6, 6, 6), Material = Glow(new Color(0.3f, 1f, 0.5f)) };
-    static readonly Mesh PlayerBolt = new BoxMesh { Size = new Vector3(0.6f, 0.6f, 10), Material = Glow(new Color(1f, 0.9f, 0.3f)) };
-    static readonly Mesh EnemyBolt = new BoxMesh { Size = new Vector3(0.8f, 0.8f, 8), Material = Glow(new Color(1f, 0.25f, 0.2f)) };
+    static readonly Mesh FuelPodMesh = new BoxMesh { Size = new Vector3(6, 6, 6), Material = Glow(new Color(0.3f, 1f, 0.5f)) };
+    static readonly Mesh PilotBolt = new BoxMesh { Size = new Vector3(0.6f, 0.6f, 10), Material = Glow(new Color(1f, 0.9f, 0.3f)) };
+    static readonly Mesh RaiderBolt = new BoxMesh { Size = new Vector3(0.8f, 0.8f, 8), Material = Glow(new Color(1f, 0.25f, 0.2f)) };
     static readonly Mesh SparkMesh = new SphereMesh { Radius = 4, Height = 8, Material = Glow(new Color(1f, 0.8f, 0.5f)) };
+
+    /// <summary>How fast a fuel pod turns about its up axis, in radians per second.</summary>
+    public static readonly Vector3 FuelPodSpin = 2 * Vector3.Up;
 
     public static WorldEnvironment Space() => new()
     {
@@ -63,18 +63,18 @@ public static class Scenery
         return star;
     }
 
-    public static MeshInstance3D Ship(bool player) => new()
+    public static MeshInstance3D Ship(bool pilot) => new()
     {
         Mesh = ShipMesh,
-        MaterialOverride = player ? PlayerHull : EnemyHull,
+        MaterialOverride = pilot ? PilotHull : RaiderHull,
         RotationDegrees = new Vector3(-90, 0, 0), // prism apex along -Z, the node's forward
     };
 
     /// <summary>A diamond drawn at constant screen size and through everything, so far ships stay findable.</summary>
-    public static Label3D EnemyMarker() => new()
+    public static Label3D RaiderMarker() => new()
     {
         Text = "◆",
-        Modulate = EnemyColor,
+        Modulate = RaiderColor,
         FontSize = 32,
         OutlineSize = 0,
         FixedSize = true,
@@ -89,11 +89,14 @@ public static class Scenery
         Scale = type.Radius * new Vector3(Stretch(rng), Stretch(rng), Stretch(rng)),
     };
 
-    public static MeshInstance3D Loot() => new() { Mesh = LootMesh };
+    /// <summary>A random tumble for an asteroid: an axis scaled by radians per second.</summary>
+    public static Vector3 AsteroidSpin(Random rng) => RandomDirection(rng) * (0.1f + 0.3f * rng.NextSingle());
 
-    public static MeshInstance3D Bolt(bool byPlayer) => new() { Mesh = byPlayer ? PlayerBolt : EnemyBolt };
+    public static MeshInstance3D FuelPod() => new() { Mesh = FuelPodMesh };
 
-    /// <summary>A short flash where a bolt hit; it frees itself, or goes with its parent.</summary>
+    public static MeshInstance3D Bolt(bool byPilot) => new() { Mesh = byPilot ? PilotBolt : RaiderBolt };
+
+    /// <summary>A flash that frees itself an instant after it is added.</summary>
     public static void Spark(Node parent, Vector3 at)
     {
         var spark = new MeshInstance3D { Mesh = SparkMesh, Position = at };
@@ -101,7 +104,26 @@ public static class Scenery
         spark.CreateTween().TweenCallback(Callable.From(spark.QueueFree)).SetDelay(0.12);
     }
 
-    public static Vector3 RandomDirection(Random rng) =>
+    /// <summary>A HUD text placed on the whole screen at an alignment, outlined so it reads over the star.</summary>
+    public static Label HudLabel(HorizontalAlignment horizontal, VerticalAlignment vertical)
+    {
+        var label = new Label
+        {
+            HorizontalAlignment = horizontal,
+            VerticalAlignment = vertical,
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        label.AddThemeFontSizeOverride("font_size", 18);
+        label.AddThemeConstantOverride("outline_size", 6);
+        label.AddThemeColorOverride("font_outline_color", Colors.Black);
+        return label;
+    }
+
+    /// <summary>The margin between the HUD labels and the screen edge, in pixels.</summary>
+    public const int HudMargin = 16;
+
+    static Vector3 RandomDirection(Random rng) =>
         new Vector3(rng.NextSingle() - 0.5f, rng.NextSingle() - 0.5f, rng.NextSingle() - 0.5f).Normalized();
 
     static float Stretch(Random rng) => 0.8f + 0.4f * rng.NextSingle();

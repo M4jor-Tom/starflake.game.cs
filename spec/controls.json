@@ -1,0 +1,128 @@
+{
+  "actions": [
+    {
+      "id": "thrust",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "KeyW"
+        }
+      ]
+    },
+    {
+      "id": "reverse",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "KeyS"
+        }
+      ]
+    },
+    {
+      "id": "yaw_left",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "KeyA"
+        }
+      ]
+    },
+    {
+      "id": "yaw_right",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "KeyD"
+        }
+      ]
+    },
+    {
+      "id": "pitch_up",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "ArrowUp"
+        }
+      ]
+    },
+    {
+      "id": "pitch_down",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "ArrowDown"
+        }
+      ]
+    },
+    {
+      "id": "roll_left",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "KeyQ"
+        }
+      ]
+    },
+    {
+      "id": "roll_right",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "KeyE"
+        }
+      ]
+    },
+    {
+      "id": "fire",
+      "kind": "hold",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "Space"
+        },
+        {
+          "device": "mouse",
+          "button": "left"
+        }
+      ]
+    },
+    {
+      "id": "next_target",
+      "kind": "press",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "Tab"
+        }
+      ]
+    },
+    {
+      "id": "jump",
+      "kind": "press",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "KeyJ"
+        }
+      ]
+    },
+    {
+      "id": "pause",
+      "kind": "press",
+      "bindings": [
+        {
+          "device": "keyboard",
+          "key": "Escape"
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,7 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// An asteroid that breaks into a fuel loot drop when shot enough.
+/// An asteroid that breaks into a fuel pod when shot enough.
 /// </summary>
 public partial class Asteroid : SpaceEntity
 {

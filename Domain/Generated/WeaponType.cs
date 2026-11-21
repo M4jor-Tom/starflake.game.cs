@@ -26,7 +26,7 @@ public partial class WeaponType : NamedThing
     public required float ProjectileSpeed { get; set; }
 
     /// <summary>
-    /// Distance after which a projectile despawns.
+    /// Distance after which a projectile dissipates.
     /// </summary>
     public required float MaxRange { get; set; }
 }

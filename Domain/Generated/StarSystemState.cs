@@ -6,7 +6,7 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// The world state of one star system within a session: what remains of its asteroids and enemies, and the loot floating there.
+/// The state of one star system: what remains of its asteroids and raiders, and the fuel pods floating there.
 /// </summary>
 public partial class StarSystemState
 {
@@ -21,12 +21,12 @@ public partial class StarSystemState
     public global::System.Collections.Generic.List<Asteroid>? Asteroids { get; set; }
 
     /// <summary>
-    /// Enemy ships not destroyed yet.
+    /// Raider ships not destroyed yet.
     /// </summary>
-    public global::System.Collections.Generic.List<EnemyShip>? EnemyShips { get; set; }
+    public global::System.Collections.Generic.List<RaiderShip>? RaiderShips { get; set; }
 
     /// <summary>
-    /// Fuel not collected yet.
+    /// Fuel pods not scooped up yet.
     /// </summary>
-    public global::System.Collections.Generic.List<LootDrop>? LootDrops { get; set; }
+    public global::System.Collections.Generic.List<FuelPod>? FuelPods { get; set; }
 }

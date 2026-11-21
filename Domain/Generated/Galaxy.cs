@@ -6,17 +6,32 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// The map of star systems connected by jump routes.
+/// Star systems connected by jump routes, and the kinds of ships, weapons, raiders and asteroids found among them.
 /// </summary>
 public partial class Galaxy : NamedThing
 {
     /// <summary>
+    /// Weapons that ship classes mount.
+    /// </summary>
+    public global::System.Collections.Generic.List<WeaponType>? WeaponTypes { get; set; }
+
+    /// <summary>
+    /// Hull designs that pilot and raider ships are built from.
+    /// </summary>
+    public global::System.Collections.Generic.List<ShipClass>? ShipClasses { get; set; }
+
+    /// <summary>
+    /// Raider archetypes that roam the star systems.
+    /// </summary>
+    public global::System.Collections.Generic.List<RaiderType>? RaiderTypes { get; set; }
+
+    /// <summary>
+    /// Asteroid kinds found in the star systems.
+    /// </summary>
+    public global::System.Collections.Generic.List<AsteroidType>? AsteroidTypes { get; set; }
+
+    /// <summary>
     /// Every star system of the galaxy.
     /// </summary>
     public required global::System.Collections.Generic.List<StarSystem> StarSystems { get; set; }
-
-    /// <summary>
-    /// Where new player ships spawn.
-    /// </summary>
-    public required StarSystem StartingSystem { get; set; }
 }

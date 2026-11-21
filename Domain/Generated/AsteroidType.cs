@@ -6,7 +6,7 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// A kind of asteroid. Shooting it until its integrity reaches zero breaks it and leaves a fuel loot drop.
+/// A kind of asteroid. Shooting it until its integrity reaches zero breaks it and leaves a fuel pod.
 /// </summary>
 public partial class AsteroidType : NamedThing
 {
@@ -16,9 +16,9 @@ public partial class AsteroidType : NamedThing
     public required float Radius { get; set; }
 
     /// <summary>
-    /// Fuel in the loot drop left when this is destroyed.
+    /// Fuel in the pod left when this is destroyed.
     /// </summary>
-    public required float FuelDrop { get; set; }
+    public required float FuelYield { get; set; }
 
     /// <summary>
     /// Damage needed to break the asteroid.
