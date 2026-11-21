@@ -1,8 +1,8 @@
 # Starflake
 
-Open-world 3D space explorer (Godot 4.7, C#). Fly from star system to star
-system: shoot asteroids and pirates, collect the fuel they drop, and jump to a
-neighbouring system once the tank holds the system's jump cost.
+Open-world 3D space explorer (Godot 4.7, C#), played solo. Each star system
+holds asteroid fields and raider ships; breaking them up is the only source of
+the fuel that each jump on to a neighbouring system burns.
 
 ## Run
 
