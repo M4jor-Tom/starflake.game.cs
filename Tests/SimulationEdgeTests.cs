@@ -184,6 +184,7 @@ public class SimulationEdgeTests
         world.Galaxy.StartingShipClass.ScoopRadius = 0; // distance 0 is not below it: the tractor branch, at zero distance
         var pod = new FuelPod { Id = "pod", FuelAmount = 9, Position = Vector3D.From(ship.Position.ToGodot()) };
         (world.Sim.System.FuelPods ??= []).Add(pod);
+        Assert.False(Rules.TankFull(ship));
         world.Sim.Step(Dt, PilotInput.None);
         Assert.Contains(pod, world.Sim.System.FuelPods);
         Assert.True(float.IsFinite(pod.Position.ToGodot().LengthSquared()));

@@ -155,7 +155,7 @@ public sealed class RaiderAiSteps(World world)
     public void ThenNeverRolls() => Assert.Equal(0, _intent.Turn.Z);
 
     [Given("a raider ship that has detected the pilot ship behind it")]
-    public void GivenDetectedBehind() => GivenARaider(DetectedAt * 2);
+    public void GivenDetectedBehind() => GivenARaider(DetectedAt * 2, DetectedAt * 2); // far keep distance: it stays put
 
     [When("the pilot ship is on its right")]
     public void WhenOnItsRight() => PlaceLocal(new Vector3(1, 0, 1), DetectedAt);
@@ -186,7 +186,7 @@ public sealed class RaiderAiSteps(World world)
     {
         var hull = Type.ShipClass;
         hull.Weapons!.Clear();
-        foreach (var (maxRange, fireRate) in new[] { (range, 4f), (range / 2, 2f) }) // the longest is not the first
+        foreach (var (maxRange, fireRate) in new[] { (range, 3f), (range / 2, 5f) }) // the longest is not the first
         {
             var weapon = world.Galaxy.Weapon(hull);
             (weapon.MaxRange, weapon.FireRate) = (maxRange, fireRate);
@@ -202,13 +202,13 @@ public sealed class RaiderAiSteps(World world)
     }
 
     [When(@"the pilot ship is ([\d.]+) metres away or farther")]
-    public void WhenOutOfRange(float range) => Place(Vector3.Forward * range, World.StepSeconds); // one step: the decision, before the raider turns
+    public void WhenOutOfRange(float range) => Place(Vector3.Forward * range, FiringSeconds); // it never thrusts, so the range holds for the whole run
 
     [When(@"the angle between the raider's nose and the pilot ship's direction is the ""raider_ai.aim_cone"" or more")]
     public void WhenOutOfTheCone()
     {
-        var angle = AimCone * 2;
-        PlaceLocal(new Vector3(MathF.Sin(angle), 0, -MathF.Cos(angle)), DetectedAt, World.StepSeconds); // one step, as above
+        var angle = AimCone + TurnRate * FiringSeconds + 0.1f; // the raider cannot turn into the cone during the run
+        PlaceLocal(new Vector3(MathF.Sin(angle), 0, -MathF.Cos(angle)), DetectedAt, FiringSeconds);
     }
 
     [Then("the raider ship fires every weapon of its ship class, each at its own fire rate")]
