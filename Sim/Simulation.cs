@@ -66,8 +66,9 @@ public sealed class Simulation
     public StarSystem? JumpTarget =>
         Ship.CurrentSystem.JumpTargets is { Count: > 0 } targets ? targets[_targetIndex % targets.Count] : null;
 
-    /// <exception cref="InvalidDataException">The spec asks for another hosting mode, lacks an action, readout, message,
-    /// menu or button the game uses, or has a HUD text with a placeholder that names nothing.</exception>
+    /// <exception cref="InvalidDataException">The spec asks for another hosting mode, allows fewer players than the session
+    /// has pilots, lacks an action, readout, message, menu or button the game uses, has a HUD text with a placeholder
+    /// that names nothing, or a camera aim the camera does not handle.</exception>
     public static Simulation Start(Galaxy galaxy, Spec spec, Random rng, IKeyLabels keys)
     {
         if (spec.Session.HostingMode != HostingMode.Solo)
@@ -92,6 +93,9 @@ public sealed class Simulation
             Orientation = Attitude.From(Quaternion.Identity),
         };
         var state = new GalaxyState { Id = "solo", Galaxy = galaxy, Pilots = [pilot], PilotShips = [ship], SystemStates = [] };
+        if (state.Pilots.Count > spec.Session.MaxPlayers)
+            throw new InvalidDataException(
+                $"session.json: max_players {spec.Session.MaxPlayers} is fewer than the {state.Pilots.Count} pilots of a solo session");
         var sim = new Simulation(state, spec, ship, rng, keys);
         sim._hud.Check(sim);
         sim.Camera.Snap(ship);

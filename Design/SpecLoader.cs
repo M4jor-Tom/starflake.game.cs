@@ -10,7 +10,7 @@ using static Starflake.Domain.Json;
 namespace Starflake.Design;
 
 /// <summary>
-/// Builds a <see cref="Spec"/> from the JSON of spec/*.json. Every failure names its file;
+/// Builds a <see cref="Spec"/> from the JSON of spec/*.json, failing on a key missing or unknown. Every failure names its file;
 /// the starting ids of session.json are resolved in the galaxy the game loads.
 /// Hand-written binding: update it when the design schema changes.
 /// </summary>
@@ -48,13 +48,13 @@ public static class SpecLoader
 
     static ControlScheme Controls(JsonNode root) => new()
     {
-        Actions = Items(root["actions"], a => new ControlAction
+        Actions = Items(Only(root, "actions")["actions"], a => new ControlAction
         {
-            Id = Str(a, "id"),
+            Id = Str(Only(a, "id", "kind", "bindings"), "id"),
             Kind = Enum<ActionKind>(a, "kind"),
             Bindings = Items(a["bindings"], b => new Binding
             {
-                Device = Enum<InputDevice>(b, "device"),
+                Device = Enum<InputDevice>(Only(b, "device", "key", "button"), "device"),
                 Key = b["key"] is null ? null : Enum<PhysicalKey>(b, "key"),
                 Button = b["button"] is null ? null : Enum<MouseButton>(b, "button"),
             }),
@@ -63,8 +63,9 @@ public static class SpecLoader
 
     static Tuning Tuning(JsonNode root)
     {
-        var flight = Obj(root, "flight");
-        var ai = Obj(root, "raider_ai");
+        var flight = Only(Obj(Only(root, "flight", "raider_ai"), "flight"),
+            "drag_fraction", "arrival_distance_fraction", "ship_hit_radius", "muzzle_clearance");
+        var ai = Only(Obj(root, "raider_ai"), "aim_cone", "steering_gain");
         return new Tuning
         {
             Flight = new FlightTuning
@@ -80,7 +81,7 @@ public static class SpecLoader
 
     static CameraRig Camera(JsonNode root)
     {
-        var offset = Obj(root, "offset");
+        var offset = Only(Obj(Only(root, "offset", "fov_degrees", "far_plane", "follow_rate", "aim"), "offset"), "x", "y", "z");
         return new CameraRig
         {
             Offset = new Vector3D { X = Num(offset, "x"), Y = Num(offset, "y"), Z = Num(offset, "z") },
@@ -93,31 +94,39 @@ public static class SpecLoader
 
     static Hud Hud(JsonNode root) => new()
     {
-        MessageDurationSeconds = Num(root, "message_duration_seconds"),
+        MessageDurationSeconds = Num(Only(root, "message_duration_seconds", "number_decimals", "readouts", "messages"),
+            "message_duration_seconds"),
         NumberDecimals = (int)Num(root, "number_decimals"),
         Readouts = Items(root["readouts"], r => new HudReadout
         {
-            Id = Str(r, "id"), Anchor = Enum<HudAnchor>(r, "anchor"), Text = Str(r, "text"),
+            Id = Str(Only(r, "id", "anchor", "text"), "id"), Anchor = Enum<HudAnchor>(r, "anchor"), Text = Str(r, "text"),
         }),
-        Messages = Items(root["messages"], m => new HudMessage { Id = Str(m, "id"), Text = Str(m, "text") }),
+        Messages = Items(root["messages"], m => new HudMessage { Id = Str(Only(m, "id", "text"), "id"), Text = Str(m, "text") }),
     };
 
     static MenuSet Menus(JsonNode root) => new()
     {
-        Menus = Items(root["menus"], m => new Menu
+        Menus = Items(Only(root, "menus")["menus"], m => new Menu
         {
-            Id = Str(m, "id"), Title = Str(m, "title"),
-            Buttons = Items(m["buttons"], b => new MenuButton { Id = Str(b, "id"), Label = Str(b, "label") }),
+            Id = Str(Only(m, "id", "title", "buttons"), "id"), Title = Str(m, "title"),
+            Buttons = Items(m["buttons"], b => new MenuButton { Id = Str(Only(b, "id", "label"), "id"), Label = Str(b, "label") }),
         }),
     };
 
     static SessionRules Session(JsonNode root, Galaxy galaxy) => new()
     {
-        HostingMode = Enum<HostingMode>(root, "hosting_mode"),
+        HostingMode = Enum<HostingMode>(Only(root, "hosting_mode", "max_players", "starting_ship_class", "starting_system"),
+            "hosting_mode"),
         MaxPlayers = (int)Num(root, "max_players"),
         StartingShipClass = Find(Index(galaxy.ShipClasses), Str(root, "starting_ship_class"), "starting_ship_class"),
         StartingSystem = Find(Index(galaxy.StarSystems), Str(root, "starting_system"), "starting_system"),
     };
+
+    // The design defines every key: one it does not, such as a typo or a renamed slot, fails instead of being ignored.
+    static JsonNode Only(JsonNode node, params string[] keys) =>
+        node.AsObject().Select(p => p.Key).FirstOrDefault(k => !keys.Contains(k)) is { } unknown
+            ? throw new InvalidDataException($"unknown key '{unknown}'")
+            : node;
 
     static Dictionary<string, T> Index<T>(IEnumerable<T>? things) where T : NamedThing =>
         (things ?? []).ToDictionary(t => t.Id);

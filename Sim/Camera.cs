@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Godot;
 using Starflake.Design;
 using Starflake.Domain;
@@ -6,8 +7,8 @@ using Starflake.Domain;
 namespace Starflake.Sim;
 
 /// <summary>
-/// The chase camera of spec/camera.json: behind and above the pilot ship at its offset, looking parallel to the
-/// nose (camera.aim), so shots fly toward the screen centre at any range. The position trails; the direction does not.
+/// The chase camera of spec/camera.json: behind and above the pilot ship at its offset, looking where camera.aim says.
+/// The position trails; the direction does not.
 /// </summary>
 public sealed class Camera
 {
@@ -33,10 +34,16 @@ public sealed class Camera
         Position = Position.Lerp(target, 1 - MathF.Exp(-_rig.FollowRate * dt));
     }
 
-    // The ship's basis, which the camera takes, and where the offset puts the camera.
+    // The basis camera.aim gives the camera, and where the offset, in the ship's frame, puts it.
+    /// <exception cref="InvalidDataException">An aim not handled here, so a new one is never silently ignored.</exception>
     (Basis Basis, Vector3 Position) Aim(SpaceEntity ship)
     {
-        var frame = new Transform3D(new Basis(ship.Orientation?.ToGodot() ?? Quaternion.Identity), ship.Position.ToGodot());
-        return (frame.Basis, frame * _rig.Offset.ToGodot());
+        var frame = new Basis(ship.Orientation?.ToGodot() ?? Quaternion.Identity);
+        var basis = _rig.Aim switch
+        {
+            CameraAim.ParallelToNose => frame, // shots fly toward the screen centre at any range
+            _ => throw new InvalidDataException($"camera.json: aim {_rig.Aim} is not supported"),
+        };
+        return (basis, ship.Position.ToGodot() + frame * _rig.Offset.ToGodot());
     }
 }

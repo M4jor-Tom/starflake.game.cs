@@ -15,7 +15,7 @@ public class SimulationEdgeTests
     static (Galaxy, Spec) Minimal()
     {
         var galaxy = GalaxyLoader.Parse(Galaxies.Minimal);
-        var session = Specs.SessionWith("starting_ship_class", "hulk");
+        var session = Specs.Edited("session", s => s["starting_ship_class"] = "hulk");
         return (galaxy, Specs.LoadWith("session", session, galaxy));
     }
 
@@ -31,7 +31,7 @@ public class SimulationEdgeTests
     [Fact]
     public void Start_refuses_a_hosting_mode_other_than_solo()
     {
-        var (galaxy, spec) = Shipped("session", Specs.SessionWith("hosting_mode", "player_hosted"));
+        var (galaxy, spec) = Shipped("session", Specs.Edited("session", s => s["hosting_mode"] = "player_hosted"));
         var e = Assert.Throws<InvalidDataException>(() => Start(galaxy, spec));
         Assert.Contains("hosting_mode", e.Message);
     }
@@ -39,9 +39,43 @@ public class SimulationEdgeTests
     [Fact]
     public void Start_fails_when_the_spec_lacks_an_action_the_game_uses()
     {
-        var (galaxy, spec) = Shipped("controls", Specs.ControlsWithout(Actions.Jump));
+        var controls = Specs.Edited("controls", c =>
+        {
+            var actions = c["actions"]!.AsArray();
+            actions.Remove(actions.First(a => a!["id"]!.GetValue<string>() == Actions.Jump));
+        });
+        var (galaxy, spec) = Shipped("controls", controls);
         var e = Assert.Throws<InvalidDataException>(() => Start(galaxy, spec));
         Assert.Contains("jump", e.Message);
+    }
+
+    [Fact]
+    public void Start_refuses_a_session_that_allows_fewer_players_than_it_has_pilots()
+    {
+        var (galaxy, spec) = Shipped("session", Specs.Edited("session", s => s["max_players"] = 0));
+        var e = Assert.Throws<InvalidDataException>(() => Start(galaxy, spec));
+        Assert.Contains("session.json", e.Message);
+        Assert.Contains("max_players", e.Message);
+    }
+
+    // No spec file can name an aim the design lacks, so the rig is built here with one.
+    [Fact]
+    public void Start_refuses_a_camera_aim_the_camera_does_not_handle()
+    {
+        var galaxy = GalaxyLoader.Parse(File.ReadAllText(Paths.Content));
+        var spec = Specs.Load(galaxy);
+        var rig = spec.Camera;
+        var unknown = (CameraAim)Enum.GetValues<CameraAim>().Length;
+        var withUnknownAim = spec with
+        {
+            Camera = new CameraRig
+            {
+                Offset = rig.Offset, FovDegrees = rig.FovDegrees, FarPlane = rig.FarPlane, FollowRate = rig.FollowRate, Aim = unknown,
+            },
+        };
+        var e = Assert.Throws<InvalidDataException>(() => Start(galaxy, withUnknownAim));
+        Assert.Contains("camera.json", e.Message);
+        Assert.Contains(unknown.ToString(), e.Message);
     }
 
     [Theory]

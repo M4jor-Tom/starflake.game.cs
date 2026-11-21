@@ -12,15 +12,13 @@ public readonly record struct RaiderIntent(Vector3 Turn, float Throttle, bool Fi
 /// <summary>Idles until the pilot ship comes within detection range, then chases it and shoots.</summary>
 public static class RaiderAi
 {
-    public static readonly RaiderIntent Idle = new(Vector3.Zero, 0, false);
-
     /// <param name="longestWeaponRange">The longest max range among the weapons of the raider's ship class.</param>
     public static RaiderIntent Decide(RaiderShip raider, PilotShip pilot, RaiderAiTuning tuning, float longestWeaponRange)
     {
         var toPilot = pilot.Position.ToGodot() - raider.Position.ToGodot();
         var distance = toPilot.Length();
         if (distance >= raider.RaiderType.DetectionRange)
-            return Idle;
+            return default; // idle: no turn, no throttle, no fire
 
         var attitude = raider.Orientation?.ToGodot() ?? Quaternion.Identity;
         var local = attitude.Inverse() * toPilot.Normalized(); // zero when exactly on the pilot ship: no NaN

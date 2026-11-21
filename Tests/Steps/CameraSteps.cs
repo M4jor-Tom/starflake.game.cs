@@ -1,6 +1,5 @@
 using Godot;
 using Reqnroll;
-using Starflake.Design;
 using Starflake.Domain;
 using Starflake.Sim;
 
@@ -41,13 +40,6 @@ public sealed class CameraSteps(World world)
     [Then(@"the camera is at once at its ""camera\.offset"" position")]
     public void ThenTheCameraIsAtItsOffset() => AssertNear(OffsetPosition, world.Sim.Camera.Position);
 
-    [Then(@"the camera looks along the ""camera\.aim"", with the ship's up as its up")]
-    public void ThenTheCameraLooksAlongTheAim()
-    {
-        Assert.Equal(CameraAim.ParallelToNose, world.Spec.Camera.Aim);
-        ThenTheCamerasDirectionFollowsTheShips();
-    }
-
     [Then(@"the field of view is the ""camera\.fov_degrees""")]
     public void ThenTheFieldOfViewIs() => Assert.Equal(world.Spec.Number("camera.fov_degrees"), world.Sim.Camera.FovDegrees);
 
@@ -72,6 +64,8 @@ public sealed class CameraSteps(World world)
         AssertNear(gapBefore * shrink, target - world.Sim.Camera.Position);
     }
 
+    // camera.aim is parallel_to_nose: looking along the nose is looking along the aim.
+    [Then(@"the camera looks along the ""camera\.aim"", with the ship's up as its up")]
     [Then("the camera's direction follows the ship's at once, without smoothing")]
     public void ThenTheCamerasDirectionFollowsTheShips()
     {

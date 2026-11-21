@@ -41,7 +41,7 @@ public class LoaderTests
     {
         var s = Specs.Load();
         Assert.Equal("scout", s.Session.StartingShipClass.Id);
-        Assert.Equal(12, s.Controls.Actions.Count);
+        Assert.Equal(s.Raw["controls"]["actions"]!.AsArray().Count, s.Controls.Actions.Count);
         Assert.Equal(s.Tuning.Flight.DragFraction, s.Number("flight.drag_fraction"));
         Assert.Equal(s.Camera.FovDegrees, s.Number("camera.fov_degrees"));
     }
@@ -49,7 +49,7 @@ public class LoaderTests
     [Fact]
     public void A_starting_system_missing_from_the_galaxy_fails_naming_it()
     {
-        var e = Assert.Throws<InvalidDataException>(() => Specs.LoadWith("session", Specs.SessionStartingIn("nowhere")));
+        var e = Assert.Throws<InvalidDataException>(() => Specs.LoadWith("session", Specs.Edited("session", s => s["starting_system"] = "nowhere")));
         Assert.Contains("starting_system", e.Message);
         Assert.Contains("nowhere", e.Message);
     }
@@ -60,6 +60,15 @@ public class LoaderTests
         var e = Assert.Throws<InvalidDataException>(() => Specs.LoadWith("tuning", "{\"flight\":{}}"));
         Assert.Contains("tuning", e.Message);
         Assert.Contains("raider_ai", e.Message);
+    }
+
+    [Fact]
+    public void An_unknown_key_names_its_file_and_the_key()
+    {
+        var tuning = Specs.Edited("tuning", t => t["flight"]!["drag_fractoin"] = 0);
+        var e = Assert.Throws<InvalidDataException>(() => Specs.LoadWith("tuning", tuning));
+        Assert.Contains("tuning.json", e.Message);
+        Assert.Contains("'drag_fractoin'", e.Message);
     }
 
     [Fact]
