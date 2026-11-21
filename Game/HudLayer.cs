@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Godot;
 using Starflake.Design;
@@ -29,6 +30,8 @@ public partial class HudLayer : CanvasLayer
     public void Refresh(Simulation sim)
     {
         var readouts = sim.Readouts;
+        if (readouts.FirstOrDefault(r => !_readouts.ContainsKey(r.Anchor)) is { } unplaced)
+            throw new InvalidDataException($"hud: readout '{unplaced.Id}' has anchor {unplaced.Anchor}, which the HUD does not lay out");
         foreach (var (anchor, label) in _readouts)
             label.Text = string.Join("\n", readouts.Where(r => r.Anchor == anchor).Select(r => r.Text));
         _message.Text = sim.MessageText;

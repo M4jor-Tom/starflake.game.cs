@@ -43,6 +43,7 @@ public partial class Main : Node3D
         AddChild(_camera);
         AddChild(_hud);
         AddChild(_menu);
+        _menu.Chosen += id => Guard(() => _sim.Choose(id));
 
         var galaxy = GalaxyLoader.Parse(Read(ContentFile));
         var spec = SpecLoader.Parse(SpecLoader.Files.ToDictionary(f => f, f => Read($"{SpecDirectory}/{f}.json")), galaxy);
