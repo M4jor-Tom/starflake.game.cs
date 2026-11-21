@@ -78,6 +78,8 @@ public class SimulationEdgeTests
     [InlineData(0, 0, 100, true)]
     [InlineData(0, 5.1f, 100, false)]
     [InlineData(0, 0, 3, true)] // starts and ends inside
+    [InlineData(4, 0, 100, true)]
+    [InlineData(3, 4.1f, 100, false)]
     public void A_swept_segment_hits_a_sphere_of_radius_5_at_the_origin(float x, float y, float startZ, bool hits) =>
         Assert.Equal(hits, Projectile.SegmentHitsSphere(new Vector3(x, y, startZ), new Vector3(x, y, -startZ), Vector3.Zero, 5));
 
@@ -114,6 +116,34 @@ public class SimulationEdgeTests
         Assert.Empty(world.Sim.System.Asteroids ?? []);
         Assert.Single(world.Sim.System.FuelPods ?? []);
         Assert.Contains(second, world.Sim.Projectiles); // nothing left to hit: it flies on
+    }
+
+    // Two raider shots on the pilot ship and a pilot shot on an asteroid, all landing in one step.
+    [Fact]
+    public void A_projectile_that_destroys_the_pilot_ship_does_not_disturb_the_rest_of_the_step()
+    {
+        var (world, asteroid) = OneAsteroid();
+        var ship = world.Sim.Ship;
+        ship.Position = new Vector3D { X = 500, Y = 0, Z = 0 }; // away from the arrival point it respawns at
+        var lethal = world.Galaxy.Weapon();
+        (lethal.Damage, lethal.ProjectileSpeed) = (ship.Hull, 100000);
+        var gun = world.Galaxy.Weapon();
+        gun.ProjectileSpeed = 100000;
+        world.FireAt(ship, lethal, byPilot: false);
+        var second = world.FireAt(ship, lethal, byPilot: false);
+        world.FireAt(asteroid, gun, byPilot: true);
+        var integrity = asteroid.Integrity;
+
+        world.Sim.Step(Dt, PilotInput.None);
+
+        Assert.Equal(ship.ShipClass.MaxHull, ship.Hull);
+        Assert.Equal("ship_destroyed", world.Sim.MessageId);
+        Assert.Equal(Rules.ArrivalPoint(ship.CurrentSystem, world.Spec.Tuning).ToGodot(), ship.Position.ToGodot());
+        Assert.Equal([second], world.Sim.Projectiles); // the respawned ship was gone from its path: one respawn
+        Assert.Equal(integrity - gun.Damage, asteroid.Integrity);
+        var pose = Pose.Of(ship);
+        Assert.True(float.IsFinite(pose.Position.LengthSquared() + pose.Velocity.LengthSquared() + pose.Attitude.LengthSquared()));
+        Assert.True(float.IsFinite(second.Position.LengthSquared()));
     }
 
     [Fact]

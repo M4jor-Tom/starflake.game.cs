@@ -155,6 +155,7 @@ public sealed class Simulation
                 _projectiles.Remove(projectile);
                 Hit(hit, projectile.Weapon.Damage);
             }
+            // ponytail: a projectile with zero net velocity never leaves its range and never expires; expire on a lifetime if that matters.
             else if (projectile.Origin.DistanceTo(projectile.Position) > projectile.Weapon.MaxRange)
                 _projectiles.Remove(projectile);
         }

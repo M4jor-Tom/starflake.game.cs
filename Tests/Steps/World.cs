@@ -86,6 +86,10 @@ public sealed class World
         Run(MathF.Ceiling((along - radius) / (projectile.Velocity.Length() * StepSeconds)) * StepSeconds);
     }
 
+    /// <summary>Runs to the first step whose end takes the projectile out the far side of the radius around the entity.</summary>
+    public void RunUntilThrough(Projectile projectile, SpaceEntity entity, float radius) =>
+        RunUntilWithin(projectile, entity, -radius);
+
     /// <summary>Fires one projectile that takes the hull or integrity of the target to 0, and runs until it has hit.</summary>
     public void HitToZero(SpaceEntity target)
     {
@@ -175,7 +179,7 @@ public sealed class GalaxyBuilder
     {
         var type = new AsteroidType { Id = $"rock-{Galaxy.AsteroidTypes!.Count}", Name = "Rock", Radius = 23, FuelYield = 13, MaxIntegrity = 37 };
         Galaxy.AsteroidTypes.Add(type);
-        var field = new AsteroidField { AsteroidType = type, Center = At(0, 0, -2100), Radius = 450, Count = count };
+        var field = new AsteroidField { AsteroidType = type, Center = At(0, 0, -2100), Radius = 470, Count = count };
         (system.AsteroidFields ??= []).Add(field);
         return field;
     }

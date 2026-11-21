@@ -133,17 +133,16 @@ public sealed class CombatSteps(World world)
         world.Hold();
     }
 
-    // Steps while the projectile is in flight: in flight beyond its range fails, which also ends the loop.
+    // Steps to the first step past the range; the projectile must stay in flight while within it.
     [When(@"the projectile is farther than ([\d.]+) metres from where it started")]
     public void WhenTheProjectileIsFartherThan(float range)
     {
         var p = TheProjectile;
-        while (world.Sim.Projectiles.Contains(p))
+        while (p.Origin.DistanceTo(p.Position) <= range)
         {
-            Assert.InRange(p.Origin.DistanceTo(p.Position), 0, range);
+            Assert.Contains(p, world.Sim.Projectiles); // still in flight within range
             world.Run(World.StepSeconds);
         }
-        Assert.True(p.Origin.DistanceTo(p.Position) > range, "the projectile disappeared within its range");
     }
 
     [Then("the projectile disappears")]
@@ -205,7 +204,7 @@ public sealed class CombatSteps(World world)
 
     [When("the path of the projectile passes through an asteroid or another raider ship")]
     public void WhenThePathPassesThroughAnAsteroidOrAnotherRaiderShip() =>
-        world.RunUntilWithin(TheProjectile, TheAsteroid, -TheAsteroid.AsteroidType.Radius); // out the far side
+        world.RunUntilThrough(TheProjectile, TheAsteroid, TheAsteroid.AsteroidType.Radius);
 
     [Then("the asteroid or raider ship is not damaged and the projectile flies on")]
     public void ThenTheAsteroidOrRaiderShipIsNotDamaged()
