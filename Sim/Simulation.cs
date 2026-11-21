@@ -154,7 +154,13 @@ public sealed class Simulation
     void FlyRaiderShips(float dt)
     {
         foreach (var raider in System.RaiderShips ?? [])
-            Flight.Step(raider, raider.RaiderType.ShipClass, Vector3.Zero, 0, Spec.Tuning.Flight, dt);
+        {
+            var hull = raider.RaiderType.ShipClass;
+            var intent = RaiderAi.Decide(raider, Ship, Spec.Tuning.RaiderAi, RaiderAi.LongestRange(hull));
+            foreach (var shot in _guns.Step(raider, hull, intent.Fire, Spec.Tuning.Flight, dt))
+                Spawn(shot); // from where the raider is when the step begins
+            Flight.Step(raider, hull, intent.Turn, intent.Throttle, Spec.Tuning.Flight, dt);
+        }
     }
 
     // Each projectile sweeps its path of this step, so a fast one cannot pass through a thin target.

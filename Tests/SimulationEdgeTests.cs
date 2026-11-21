@@ -175,4 +175,31 @@ public class SimulationEdgeTests
         var pose = Pose.Of(ship);
         Assert.True(float.IsFinite(pose.Position.LengthSquared() + pose.Velocity.LengthSquared() + pose.Attitude.LengthSquared()));
     }
+
+    [Fact]
+    public void A_fuel_pod_exactly_at_the_ship_is_pulled_without_NaN_when_the_scoop_cannot_take_it()
+    {
+        var world = new World();
+        var ship = world.Sim.Ship;
+        world.Galaxy.StartingShipClass.ScoopRadius = 0; // distance 0 is not below it: the tractor branch, at zero distance
+        var pod = new FuelPod { Id = "pod", FuelAmount = 9, Position = Vector3D.From(ship.Position.ToGodot()) };
+        (world.Sim.System.FuelPods ??= []).Add(pod);
+        world.Sim.Step(Dt, PilotInput.None);
+        Assert.Contains(pod, world.Sim.System.FuelPods);
+        Assert.True(float.IsFinite(pod.Position.ToGodot().LengthSquared()));
+    }
+
+    [Fact]
+    public void A_raider_exactly_at_the_pilot_ship_decides_without_NaN()
+    {
+        var world = new World();
+        world.Galaxy.RaiderPack(world.Galaxy.StartingSystem, 1);
+        var raider = world.Sim.System.RaiderShips![0];
+        raider.Position = Vector3D.From(world.Sim.Ship.Position.ToGodot());
+        var intent = RaiderAi.Decide(raider, world.Sim.Ship, world.Spec.Tuning.RaiderAi, 1000);
+        Assert.True(float.IsFinite(intent.Turn.LengthSquared()));
+        world.Sim.Step(Dt, PilotInput.None);
+        var pose = Pose.Of(raider);
+        Assert.True(float.IsFinite(pose.Position.LengthSquared() + pose.Velocity.LengthSquared() + pose.Attitude.LengthSquared()));
+    }
 }
