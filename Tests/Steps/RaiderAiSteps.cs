@@ -126,12 +126,23 @@ public sealed class RaiderAiSteps(World world)
         Assert.True(Pose.Of(Raider).Velocity.Length() > 0, "the raider ship did not speed up");
     }
 
-    // Ahead of the nose, off it on both axes, so that one input is capped and the other is not.
+    // Ahead of the nose, off it on both axes, so that one input is capped and the other is not. One step, so the
+    // turn it applied is that of the inputs below.
     [Given("a raider ship that has detected the pilot ship ahead of it")]
     public void GivenDetectedAhead()
     {
         GivenARaider(DetectedAt * 2);
-        PlaceLocal(new Vector3(0.8f, 0.05f, -1), DetectedAt);
+        PlaceLocal(new Vector3(0.8f, 0.05f, -1), DetectedAt, World.StepSeconds);
+    }
+
+    // The raider ship's attitude changed by the pitch, then the yaw, of the given inputs at its turn rate over one step.
+    void AssertTurnedBy(float pitch, float yaw)
+    {
+        var angle = TurnRate * World.StepSeconds;
+        var expected = new Quaternion(Vector3.Right, pitch * angle) * new Quaternion(Vector3.Up, yaw * angle);
+        var turned = _before.Attitude.Inverse() * Pose.Of(Raider).Attitude;
+        var (want, got) = (expected * Vector3.Forward, turned * Vector3.Forward);
+        Assert.True(want.DistanceTo(got) < World.Tolerance / 100, $"expected the nose turned to {want}, got {got}");
     }
 
     [Then(@"its pitch and yaw inputs are the sideways offsets of the pilot ship's direction multiplied by the ""raider_ai.steering_gain""")]
@@ -140,6 +151,7 @@ public sealed class RaiderAiSteps(World world)
         var direction = (Pilot.Position.ToGodot() - _before.Position).Normalized();
         Assert.InRange(_intent.Turn.X, direction.Y * Gain - World.Tolerance, direction.Y * Gain + World.Tolerance);
         Assert.Equal(Mathf.Clamp(-direction.X * Gain, -1, 1), _intent.Turn.Y);
+        AssertTurnedBy(direction.Y * Gain, Mathf.Clamp(-direction.X * Gain, -1, 1));
     }
 
     [Then("each input is capped at a full turn input")]
@@ -149,6 +161,7 @@ public sealed class RaiderAiSteps(World world)
         Assert.True(MathF.Abs(direction.X * Gain) > 1, "the placement does not call for a capped input");
         Assert.All([_intent.Turn.X, _intent.Turn.Y], input => Assert.InRange(input, -1, 1));
         Assert.Equal(-1, _intent.Turn.Y); // the pilot ship is on the right
+        AssertTurnedBy(direction.Y * Gain, -1);
     }
 
     [Then("the raider ship never rolls")]

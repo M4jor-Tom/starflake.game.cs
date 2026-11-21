@@ -156,9 +156,25 @@ public sealed partial class HudSteps(World world)
         Assert.DoesNotContain("{", world.Sim.MessageText);
     }
 
+    // In every readout shown now that names the action's keys: its spec text, the placeholder read as stated.
     [Then(@"the key placeholder of ""([a-z_]+)"" reads (.+)")]
-    public void ThenTheKeyPlaceholderReads(string actionId, string expected) =>
-        Assert.Equal(expected, KeyNames.Of(world.Spec.Action(actionId), world.Keys));
+    public void ThenTheKeyPlaceholderReads(string actionId, string expected)
+    {
+        var placeholder = $"{{key:{actionId}}}";
+        var readouts = world.Spec.Hud.Readouts.Where(r => r.Text.Contains(placeholder) && Shown.Contains(r.Id)).ToList();
+        Assert.NotEmpty(readouts);
+        foreach (var readout in readouts)
+        {
+            var pieces = Regex.Split(readout.Text, @"(\{[^{}]*\})")
+                .Select(p => p switch
+                {
+                    _ when p == placeholder => Regex.Escape(expected),
+                    _ when Placeholder().IsMatch(p) => ".*", // another placeholder
+                    _ => Regex.Escape(p),
+                });
+            Assert.Matches("^" + string.Concat(pieces) + "$", Text(readout.Id));
+        }
+    }
 
     [GeneratedRegex(@"""([a-z_]+)""")]
     private static partial Regex Quoted();

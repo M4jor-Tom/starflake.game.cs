@@ -142,6 +142,7 @@ public sealed class SessionSteps(World world)
             _raiderWhenLeft = (_raider.Hull, Pose.Of(_raider));
         world.Sim.Press(Actions.Jump);
         Assert.True(home != world.Sim.Ship.CurrentSystem, "the pilot ship did not jump away");
+        world.Run(1); // a while away, so a left star system that is still simulated would show it
         world.Sim.Press(Actions.Jump);
         Assert.Same(home, world.Sim.Ship.CurrentSystem);
     }

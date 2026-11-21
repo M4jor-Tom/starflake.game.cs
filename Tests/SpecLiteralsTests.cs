@@ -27,6 +27,7 @@ public partial class SpecLiteralsTests
     public void No_display_text_of_the_spec_is_restated()
     {
         var texts = DisplayTexts();
+        Assert.NotEmpty(texts);
         var files = HandWritten("*.cs").Where(f => f != $"Tests/{nameof(SpecLiteralsTests)}.cs")
             .Select(f => (f, StringLiterals(Read(f))))
             .Concat(HandWritten("*.json").Where(f => f.StartsWith("content/")).Select(f => (f, Whole(f))))
@@ -39,7 +40,9 @@ public partial class SpecLiteralsTests
     {
         var numbers = SpecLeaves().Where(l => l.Value.GetValueKind() == JsonValueKind.Number)
             .Select(l => l.Value.GetValue<double>()).Except(Unchecked).ToHashSet();
-        var files = HandWritten("*.cs").Where(f => NumberDirectories.Any(f.StartsWith) && f != Scenery);
+        Assert.NotEmpty(numbers);
+        var files = HandWritten("*.cs").Where(f => NumberDirectories.Any(f.StartsWith) && f != Scenery).ToList();
+        Assert.NotEmpty(files);
         Assert.Empty(files.SelectMany(f => NumberFindings(f, Read(f), numbers)));
     }
 
