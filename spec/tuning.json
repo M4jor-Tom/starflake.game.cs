@@ -1,0 +1,12 @@
+{
+  "flight": {
+    "drag_fraction": 0.5,
+    "arrival_distance_fraction": 0.1,
+    "ship_hit_radius": 12,
+    "muzzle_clearance": 2
+  },
+  "raider_ai": {
+    "aim_cone": 0.15,
+    "steering_gain": 4
+  }
+}

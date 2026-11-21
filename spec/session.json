@@ -1,0 +1,6 @@
+{
+  "hosting_mode": "solo",
+  "max_players": 1,
+  "starting_ship_class": "scout",
+  "starting_system": "sol"
+}

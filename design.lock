@@ -1,0 +1,4 @@
+# Design release (gameplay specification) the game consumes.
+# Bump DESIGN_REF, run tools/sync-design.sh, fix the bindings, commit.
+DESIGN_REPO=https://github.com/M4jor-Tom/starflake.design.git
+DESIGN_REF=v0.3.0

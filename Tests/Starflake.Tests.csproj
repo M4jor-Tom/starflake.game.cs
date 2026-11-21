@@ -13,6 +13,9 @@
     <ProjectReference Include="../Starflake.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="../spec/*.json" Link="spec/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

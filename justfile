@@ -1,5 +1,5 @@
-# Run every check: analyzers, the acceptance scenarios and the content.
-test: build acceptance content
+# Run every check: analyzers, the acceptance scenarios, the content and the design pin.
+test: build acceptance content design
 
 # Compile the C# and the tests. Analyzer findings and warnings fail the build.
 build:
@@ -13,3 +13,7 @@ acceptance: build
 # Validate content/*.json against the pinned ontology.
 content:
     tools/sync-ontology.sh --content-only
+
+# Check that spec/*.json and Tests/Features match the pinned design release.
+design:
+    tools/sync-design.sh --check

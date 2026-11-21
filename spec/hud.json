@@ -1,0 +1,74 @@
+{
+  "message_duration_seconds": 4,
+  "number_decimals": 0,
+  "readouts": [
+    {
+      "id": "system",
+      "anchor": "top_left",
+      "text": "{system_name}  ·  class {star_class} star"
+    },
+    {
+      "id": "hull",
+      "anchor": "top_left",
+      "text": "Hull  {hull} / {max_hull}"
+    },
+    {
+      "id": "fuel",
+      "anchor": "top_left",
+      "text": "Fuel  {fuel} / {fuel_capacity}"
+    },
+    {
+      "id": "fuel_tank_full",
+      "anchor": "top_left",
+      "text": "Fuel  {fuel} / {fuel_capacity}  (full)"
+    },
+    {
+      "id": "jump_route_ready",
+      "anchor": "top_left",
+      "text": "Jump to {target_name}: READY, press {key:jump}"
+    },
+    {
+      "id": "jump_route_fuel_short",
+      "anchor": "top_left",
+      "text": "Jump to {target_name}: {fuel_missing} more fuel needed"
+    },
+    {
+      "id": "jump_route_none",
+      "anchor": "top_left",
+      "text": "No jump route"
+    },
+    {
+      "id": "counts",
+      "anchor": "top_left",
+      "text": "Asteroids {asteroid_count}  ·  Raiders {raider_count}  ·  Fuel pods {fuel_pod_count}"
+    },
+    {
+      "id": "crosshair",
+      "anchor": "center",
+      "text": "+"
+    },
+    {
+      "id": "controls_help",
+      "anchor": "bottom_center",
+      "text": "{key:thrust}/{key:reverse} thrust  ·  {key:yaw_left}/{key:yaw_right} yaw  ·  {key:pitch_up}/{key:pitch_down} pitch  ·  {key:roll_left}/{key:roll_right} roll  ·  {key:fire} fire  ·  {key:next_target} next jump target  ·  {key:jump} jump  ·  {key:pause} pause"
+    }
+  ],
+  "messages": [
+    {
+      "id": "welcome",
+      "text": "Shoot asteroids and raiders, collect their fuel, then jump."
+    },
+    {
+      "id": "jumped",
+      "text": "Jumped to {target_name}."
+    },
+    {
+      "id": "jump_refused",
+      "text": "Jumping out of {system_name} costs {jump_fuel_cost} fuel."
+    },
+    {
+      "id": "ship_destroyed",
+      "text": "Ship destroyed. Repaired at the arrival point, fuel kept."
+    }
+  ]
+}

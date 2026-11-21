@@ -1,0 +1,11 @@
+{
+  "offset": {
+    "x": 0,
+    "y": 14,
+    "z": 48
+  },
+  "fov_degrees": 70,
+  "far_plane": 60000,
+  "follow_rate": 6,
+  "aim": "parallel_to_nose"
+}

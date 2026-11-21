@@ -20,6 +20,9 @@ internal static class Json
     public static T Find<T>(Dictionary<string, T> index, string id, string key) =>
         index.TryGetValue(id, out var found) ? found : throw new InvalidDataException($"{key}: unknown id '{id}'");
 
+    public static JsonNode Obj(JsonNode node, string key) =>
+        node[key] ?? throw new InvalidDataException($"missing {key}");
+
     public static string Str(JsonNode node, string key) =>
         (string?)node[key] ?? throw new InvalidDataException($"missing {key}");
 
