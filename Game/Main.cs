@@ -1,117 +1,124 @@
 using System;
+using System.IO;
 using System.Linq;
 using Godot;
+using Starflake.Design;
 using Starflake.Domain;
+using Starflake.Sim;
+using FileAccess = Godot.FileAccess;
 
 namespace Starflake.Game;
 
-/// <summary>Loads content, starts a solo session and swaps star systems on jumps.</summary>
+/// <summary>
+/// Loads the content and the spec, runs the simulation one step per physics frame and draws it.
+/// With the user argument <c>--boot-check</c> it also opens and closes the pause menu, then quits;
+/// any failure prints and exits 1.
+/// </summary>
 public partial class Main : Node3D
 {
-    const string ContentPath = "res://content/core.json";
-    readonly Random _rng = new();
-    GameSession _session = null!;
-    PlayerShipNode _player = null!;
-    ChaseCamera _camera = null!;
-    Hud _hud = null!;
+    const string ContentPath = "res://content/core.json", SpecDirectory = "res://spec/";
+    const string BootCheckArgument = "--boot-check";
+    const int BootCheckFrames = 30;
+
+    readonly StarSystemView _view = new();
+    readonly ChaseCamera _camera = new();
+    readonly HudLayer _hud = new();
+    readonly PauseMenu _menu = new();
+    Simulation _sim = null!;
     Node3D _starfield = null!;
-    StarSystemView? _view;
-    int _targetIndex;
+    bool _bootCheck;
+    int _frames;
 
-    internal GameSession Session => _session;
-
-    internal StarSystemView View => _view!;
-
-    public override void _Ready()
+    public override void _Ready() => Guard(() =>
     {
-        ContentPack content;
-        try
-        {
-            content = ContentLoader.Parse(FileAccess.GetFileAsString(ContentPath));
-        }
-        catch (Exception e)
-        {
-            GD.PrintErr($"{ContentPath}: {e.Message}");
-            GetTree().Quit(1);
-            return;
-        }
-
-        Controls.Register();
-        StartSolo(content);
-        if (OS.GetCmdlineUserArgs().Contains("--self-test"))
-            RunSelfTest(content);
-    }
-
-    void StartSolo(ContentPack content)
-    {
-        _session = Rules.NewSoloSession(content, "Pilot");
-
         AddChild(Scenery.Space());
-        AddChild(_starfield = Scenery.Starfield(_rng));
-        AddChild(_player = new PlayerShipNode { Model = _session.PlayerShips![0] });
-        AddChild(_camera = new ChaseCamera { Target = _player });
-        AddChild(_hud = new Hud());
-        _player.Died += () => _hud.Flash("Ship destroyed. Repaired at the arrival point, fuel kept.");
-        Enter(Ship.CurrentSystem);
-        _hud.Flash("Shoot asteroids and pirates, collect their fuel, then jump.");
+        _starfield = Scenery.Starfield(new Random());
+        AddChild(_starfield);
+        AddChild(_view);
+        AddChild(_camera);
+        AddChild(_hud);
+        AddChild(_menu);
+
+        var galaxy = GalaxyLoader.Parse(Read(ContentPath));
+        var spec = SpecLoader.Parse(SpecLoader.Files.ToDictionary(f => f, f => Read($"{SpecDirectory}{f}.json")), galaxy);
+        InputMapper.Register(spec.Controls);
+        _sim = Simulation.Start(galaxy, spec, new Random(), new InputMapper.Labels());
+        Refresh();
+        _bootCheck = OS.GetCmdlineUserArgs().Contains(BootCheckArgument);
+    });
+
+    public override void _PhysicsProcess(double delta) => Guard(() =>
+    {
+        _sim.Step((float)delta, InputMapper.Read(_sim.Spec.Controls));
+        Refresh();
+        if (_sim.QuitRequested)
+            GetTree().Quit();
+        else if (_bootCheck)
+            BootCheck();
+    });
+
+    public override void _UnhandledInput(InputEvent input) => Guard(() =>
+    {
+        foreach (var action in _sim.Spec.Controls.Actions.Where(a => a.Kind == ActionKind.Press && input.IsActionPressed(a.Id)))
+            _sim.Press(action.Id);
+    });
+
+    void Refresh()
+    {
+        _view.Refresh(_sim);
+        _camera.Refresh(_sim);
+        _starfield.Position = _camera.Position; // the stars never get closer
+        _hud.Refresh(_sim);
+        _menu.Refresh(_sim);
     }
 
-    async void RunSelfTest(ContentPack content)
+    // Boots, lets the session run, then presses pause twice through the input pipeline. It asserts no gameplay.
+    void BootCheck()
+    {
+        _frames++;
+        if (_frames == BootCheckFrames)
+            PressPause();
+        else if (_frames == BootCheckFrames + 1)
+        {
+            Check(_sim.OpenMenu != null && _menu.Visible, "pause opens the pause menu");
+            PressPause();
+        }
+        else if (_frames > BootCheckFrames + 1)
+        {
+            Check(_sim.OpenMenu == null && !_menu.Visible, "pause again closes it");
+            GD.Print("boot check passed");
+            GetTree().Quit(0);
+        }
+    }
+
+    static void PressPause()
+    {
+        Input.ParseInputEvent(new InputEventAction { Action = Actions.Pause, Pressed = true });
+        Input.FlushBufferedEvents(); // headless display servers never flush on their own
+    }
+
+    static void Check(bool ok, string what)
+    {
+        if (!ok)
+            throw new InvalidOperationException($"boot check failed: {what}");
+    }
+
+    static string Read(string path) =>
+        FileAccess.FileExists(path) ? FileAccess.GetFileAsString(path) : throw new FileNotFoundException($"{path}: no such file");
+
+    // A failure anywhere prints and ends the game with exit code 1, instead of running on in a broken state.
+    void Guard(Action action)
     {
         try
         {
-            SelfTest.Run(content);
-            await SelfTest.RunScene(this);
-            GetTree().Quit();
+            action();
         }
         catch (Exception e)
         {
-            GD.PrintErr(e.Message);
+            GD.PrintErr(e.ToString());
+            SetPhysicsProcess(false);
+            SetProcessUnhandledInput(false);
             GetTree().Quit(1);
         }
-    }
-
-    public override void _PhysicsProcess(double delta)
-    {
-        if (_view == null)
-            return;
-        _starfield.Position = _camera.Position;
-        _hud.Show(Ship, _view.State, JumpTarget);
-    }
-
-    public override void _UnhandledInput(InputEvent input)
-    {
-        var target = JumpTarget;
-        if (target == null)
-            return;
-        if (input.IsActionPressed(Controls.NextTarget))
-            _targetIndex++;
-        else if (input.IsActionPressed(Controls.Jump))
-        {
-            var from = Ship.CurrentSystem;
-            if (!Rules.TryJump(Ship, target))
-            {
-                _hud.Flash($"Jumping out of {from.Name} costs {from.JumpFuelCost:0} fuel.");
-                return;
-            }
-            Enter(target);
-            _hud.Flash($"Jumped to {target.Name}.");
-        }
-    }
-
-    PlayerShip Ship => _player.Model;
-
-    StarSystem? JumpTarget =>
-        Ship.CurrentSystem.JumpTargets is { Count: > 0 } targets ? targets[_targetIndex % targets.Count] : null;
-
-    void Enter(StarSystem system)
-    {
-        _view?.QueueFree(); // its entity nodes write their state back as they leave the tree
-        _view = new StarSystemView { State = Rules.StateOf(_session, system, _rng), Player = _player };
-        AddChild(_view);
-        _player.View = _view;
-        _player.Arrive();
-        _camera.Snap();
-        _targetIndex = 0;
     }
 }

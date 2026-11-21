@@ -5,8 +5,4 @@
     <RootNamespace>Starflake</RootNamespace>
     <DefaultItemExcludes>$(DefaultItemExcludes);Tests/**</DefaultItemExcludes>
   </PropertyGroup>
-  <ItemGroup>
-    <!-- until the nodes are rewritten on Sim/ -->
-    <Compile Remove="Game/**" />
-  </ItemGroup>
 </Project>

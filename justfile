@@ -1,5 +1,5 @@
-# Run every check: analyzers, the acceptance scenarios, the content and the design pin.
-test: build acceptance content design
+# Run every check: analyzers, the acceptance scenarios, the boot check, the content and the design pin.
+test: build acceptance boot content design
 
 # Compile the C# and the tests. Analyzer findings and warnings fail the build.
 build:
@@ -9,6 +9,10 @@ build:
 # Run the unit tests and acceptance scenarios.
 acceptance: build
     dotnet test Tests --no-build
+
+# Boot the game headless on the real content and spec, open and close the pause menu; fail on any error.
+boot: build
+    tools/boot-check.sh
 
 # Validate content/*.json against the pinned ontology.
 content:
