@@ -98,6 +98,7 @@ public sealed class PauseSteps(World world)
     public void WhenThePlayerPresses(string actionId) => ActAndPlayOn(sim => sim.Press(actionId));
 
     [When(@"the player chooses ""([a-z_]+)""")]
+    [Scope(Feature = "Pause")]
     public void WhenThePlayerChooses(string buttonId) => ActAndPlayOn(sim => sim.Choose(buttonId));
 
     [Then(@"the menu ""([a-z_]+)"" opens with its buttons in the order of the spec")]

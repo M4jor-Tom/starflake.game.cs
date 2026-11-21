@@ -73,11 +73,12 @@ public class SimulationEdgeTests
     }
 
     [Theory]
-    [InlineData("pause_menu", null)]
-    [InlineData("pause_menu", "resume")]
-    [InlineData("pause_menu", "quit")]
-    public void Start_fails_when_the_menus_spec_lacks_an_id_the_game_names(string menuId, string? buttonId)
+    [InlineData(null)]
+    [InlineData("resume")]
+    [InlineData("quit")]
+    public void Start_fails_when_the_menus_spec_lacks_an_id_the_game_names(string? buttonId)
     {
+        const string menuId = "pause_menu";
         var menus = Specs.Edited("menus", m =>
         {
             var items = m["menus"]!.AsArray();

@@ -59,6 +59,7 @@ public class LoaderTests
     {
         var e = Assert.Throws<InvalidDataException>(() => Specs.LoadWith("tuning", "{\"flight\":{}}"));
         Assert.Contains("tuning", e.Message);
+        Assert.Contains("raider_ai", e.Message);
     }
 
     [Fact]
