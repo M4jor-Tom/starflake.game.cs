@@ -15,8 +15,10 @@ source ontology.lock
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-git -c advice.detachedHead=false clone --quiet --depth 1 --branch "$ONTOLOGY_REF" \
-  "${STARFLAKE_ONTOLOGY_REPO:-$ONTOLOGY_REPO}" "$tmp/ontology"
+# init + fetch instead of clone --branch: a shallow clone of an annotated tag warns that it "is not a commit".
+git init --quiet "$tmp/ontology"
+git -C "$tmp/ontology" fetch --quiet --depth 1 "${STARFLAKE_ONTOLOGY_REPO:-$ONTOLOGY_REPO}" "$ONTOLOGY_REF"
+git -C "$tmp/ontology" -c advice.detachedHead=false checkout --quiet FETCH_HEAD
 schema="$tmp/ontology/src/starflake_ontology/schema/starflake_ontology.yaml"
 
 out=Domain/Generated
