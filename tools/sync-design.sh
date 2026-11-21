@@ -3,9 +3,9 @@
 # and Design/Generated. Run inside `nix develop`.
 #
 #   tools/sync-design.sh          # sync everything
-#   tools/sync-design.sh --check  # compare spec and features with the release; write nothing, fail on drift
+#   tools/sync-design.sh --check  # compare all three with the release; write nothing, fail on drift
 #
-# Overrides for unpublished local checkouts:
+# Overrides for local checkouts:
 #   STARFLAKE_DESIGN_REPO=file://$PWD/../design STARFLAKE_ONTOLOGY_REPO=file://$PWD/../ontology \
 #     UV_NO_CACHE=1 LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-design.sh
 set -euo pipefail
@@ -25,7 +25,7 @@ git -C "$tmp/design" -c advice.detachedHead=false checkout --quiet FETCH_HEAD
 # The check writes the release into the temp dir and compares; the sync writes it here.
 out=.
 [ "${1:-}" = --check ] && out="$tmp/out"
-rm -f "$out"/spec/*.json "$out"/Tests/Features/*.feature
+rm -f "$out"/spec/*.json "$out"/Tests/Features/*.feature "$out"/Design/Generated/*.cs
 mkdir -p "$out/spec" "$out/Tests/Features"
 for yaml in "$tmp"/design/spec/*.yaml; do
   uv run --no-project --with pyyaml python -c \
@@ -34,17 +34,14 @@ for yaml in "$tmp"/design/spec/*.yaml; do
 done
 cp "$tmp"/design/features/*.feature "$out/Tests/Features/"
 
-if [ "$out" != . ]; then
-  # Against the working tree, so an unstaged hand edit is drift too, and stays where it is.
-  status=0
-  diff -r "$out/spec" spec || status=1
-  diff -r "$out/Tests/Features" Tests/Features || status=1
-  exit "$status"
-fi
-
-"$tmp/design/tools/fetch-ontology.sh"
-rm -f Design/Generated/*.cs # the generator never deletes classes removed from the schema
+"$tmp/design/tools/fetch-ontology.sh" # the design schema imports the ontology it pins
 uvx --from "${LINKML_CSHARP_SOURCE:-$LINKML_CSHARP}" \
-  gen-csharp "$tmp/design/schema/starflake_design.yaml" -d Design/Generated \
+  gen-csharp "$tmp/design/schema/starflake_design.yaml" -d "$out/Design/Generated" \
   --namespace Starflake.Design --import-namespace starflake-ontology=Starflake.Domain
-git status --short -- Design/Generated
+
+# Against the working tree, so an unstaged hand edit is drift too, and stays where it is.
+status=0
+for dir in spec Tests/Features Design/Generated; do
+  diff -r -x .gdignore "$out/$dir" "$dir" || status=1
+done
+exit "$status"

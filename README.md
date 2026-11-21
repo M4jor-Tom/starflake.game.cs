@@ -49,8 +49,9 @@ The domain model lives in the separate
 3. `git status Domain/Generated` shows the drift; fix `Domain/Bindings/` and
    `Design/`, `Sim/` and `Game/` until `just test` passes, then commit everything together.
 
-After editing content only, `tools/sync-ontology.sh --content-only` validates it
-without regenerating code. `Domain/Generated/.gdignore` keeps Godot from
+`just content` (part of `just test`) runs `tools/sync-ontology.sh --check`: it
+fails when `Domain/Generated/` differs from what the pinned release generates,
+and validates `content/*.json`, without writing anything. `Domain/Generated/.gdignore` keeps Godot from
 importing generated classes; MSBuild still compiles them.
 
 ## Design
@@ -70,13 +71,16 @@ they do not. To upgrade:
    `just test` passes, then commit everything together.
 
 `just design` (part of `just test`) runs `tools/sync-design.sh --check`: it
-fails when `spec/` or `Tests/Features/` differ from the pinned release.
+fails when `spec/`, `Tests/Features/` or `Design/Generated/` differ from the
+pinned release, without writing anything.
 
 ## Local generator checkout
 
-Until [linkml-csharp](https://github.com/M4jor-Tom/linkml-csharp) is published,
-point both sync scripts at a local checkout. `UV_NO_CACHE=1` makes `uvx` build
-it afresh instead of serving a stale cached build:
+`ontology.lock` also pins the release of
+[linkml-csharp](https://github.com/M4jor-Tom/linkml-csharp) that generates both
+`Generated/` directories. To try an unreleased generator, point both sync
+scripts at a local checkout. `UV_NO_CACHE=1` makes `uvx` build it afresh instead
+of serving a stale cached build:
 
 ```shell
 UV_NO_CACHE=1 LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-ontology.sh
