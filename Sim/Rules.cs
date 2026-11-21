@@ -85,8 +85,7 @@ public static class Rules
         else
             throw new ArgumentException($"{entity.Id} cannot be destroyed in {state.StarSystem.Id}");
 
-        var at = entity.Position;
-        var pod = new FuelPod { Id = $"{entity.Id}-pod", FuelAmount = fuel, Position = new Vector3D { X = at.X, Y = at.Y, Z = at.Z } };
+        var pod = new FuelPod { Id = $"{entity.Id}-pod", FuelAmount = fuel, Position = Vector3D.From(entity.Position.ToGodot()) };
         (state.FuelPods ??= []).Add(pod);
         return pod;
     }
