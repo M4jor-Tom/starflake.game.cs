@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Godot;
@@ -16,7 +17,11 @@ public interface IKeyLabels
 /// <summary>One solo session: the galaxy state, the spec it plays by, and the pilot ship.</summary>
 public sealed class Simulation
 {
+    const string ShipDestroyed = "ship_destroyed";
+
     readonly Random _rng;
+    readonly Guns _guns = new();
+    readonly List<Projectile> _projectiles = [];
 
     Simulation(GalaxyState state, Spec spec, PilotShip ship, Random rng)
     {
@@ -35,6 +40,12 @@ public sealed class Simulation
 
     /// <summary>The state of the pilot ship's current star system.</summary>
     public StarSystemState System { get; private set; }
+
+    /// <summary>The projectiles in flight in the current star system.</summary>
+    public IReadOnlyList<Projectile> Projectiles => _projectiles;
+
+    /// <summary>The id of the HUD message flashed last; null before any.</summary>
+    public string? MessageId { get; private set; }
 
     /// <summary>The selected jump target; null in a star system without jump targets.</summary>
     public StarSystem? JumpTarget { get; private set; }
@@ -71,15 +82,23 @@ public sealed class Simulation
     /// <summary>Advances the session by one step; each concern runs in turn.</summary>
     public void Step(float dt, PilotInput input)
     {
+        foreach (var shot in _guns.Step(Ship, Ship.ShipClass, input.IsHeld(Actions.Fire), Spec.Tuning.Flight, dt))
+            Spawn(shot); // from where the ship is when the step begins
         FlyPilotShip(dt, input);
         FlyRaiderShips(dt);
+        MoveProjectiles(dt);
     }
 
+    /// <summary>Puts a fired projectile in flight in the current star system.</summary>
+    public void Spawn(Projectile projectile) => _projectiles.Add(projectile);
+
     /// <summary>Acts on a press action of the spec. An action without an effect yet does nothing.</summary>
-    /// <exception cref="InvalidDataException">The spec has no such action.</exception>
+    /// <exception cref="ArgumentException">The spec has no such action.</exception>
     public void Press(string actionId)
     {
-        switch (Spec.Action(actionId).Id)
+        if (!Spec.Controls.Actions.Exists(a => a.Id == actionId))
+            throw new ArgumentException($"no action '{actionId}'", nameof(actionId));
+        switch (actionId)
         {
             // next_target and jump come with the jump drive, pause with the pause menu.
             default:
@@ -120,5 +139,54 @@ public sealed class Simulation
     {
         foreach (var raider in System.RaiderShips ?? [])
             Flight.Step(raider, raider.RaiderType.ShipClass, Vector3.Zero, 0, Spec.Tuning.Flight, dt);
+    }
+
+    // Each projectile sweeps its path of this step, so a fast one cannot pass through a thin target.
+    void MoveProjectiles(float dt)
+    {
+        foreach (var projectile in _projectiles.ToList()) // a hit removes projectiles and targets mid-loop
+        {
+            var from = projectile.Position;
+            projectile.Position += projectile.Velocity * dt;
+            var hit = TargetsOf(projectile).FirstOrDefault(t =>
+                Projectile.SegmentHitsSphere(from, projectile.Position, t.Entity.Position.ToGodot(), t.Radius)).Entity;
+            if (hit != null)
+            {
+                _projectiles.Remove(projectile);
+                Hit(hit, projectile.Weapon.Damage);
+            }
+            else if (projectile.Origin.DistanceTo(projectile.Position) > projectile.Weapon.MaxRange)
+                _projectiles.Remove(projectile);
+        }
+    }
+
+    // Pilot projectiles hit asteroids and raider ships, raider projectiles only the pilot ship.
+    IEnumerable<(SpaceEntity Entity, float Radius)> TargetsOf(Projectile projectile)
+    {
+        var shipRadius = Spec.Tuning.Flight.ShipHitRadius;
+        if (!projectile.ByPilot)
+            return [(Ship, shipRadius)];
+        return (System.Asteroids ?? []).Select(a => ((SpaceEntity)a, a.AsteroidType.Radius))
+            .Concat((System.RaiderShips ?? []).Select(r => ((SpaceEntity)r, shipRadius)));
+    }
+
+    void Hit(SpaceEntity entity, float damage)
+    {
+        if (!Rules.Damage(entity, damage))
+            return;
+        if (entity == Ship)
+            Respawn();
+        else
+            Rules.Destroy(System, entity);
+    }
+
+    // Repaired, at rest at the arrival point of the same star system; fuel and the star system are kept.
+    void Respawn()
+    {
+        Ship.Hull = Ship.ShipClass.MaxHull;
+        Ship.Position = Rules.ArrivalPoint(Ship.CurrentSystem, Spec.Tuning);
+        Ship.Velocity = Vector3D.From(Vector3.Zero);
+        Ship.Orientation = Attitude.From(Quaternion.Identity);
+        MessageId = ShipDestroyed;
     }
 }

@@ -1,3 +1,4 @@
+using Godot;
 using Starflake.Design;
 using Starflake.Domain;
 using Starflake.Sim;
@@ -61,6 +62,73 @@ public class SimulationEdgeTests
         var fire = new PilotInput(new HashSet<string> { Actions.Fire });
         for (var i = 0; i < 60; i++)
             sim.Step(Dt, fire);
-        Assert.Empty(sim.Ship.ShipClass.Weapons ?? []);
+        Assert.Empty(sim.Projectiles);
+    }
+
+    [Fact]
+    public void Press_and_Choose_refuse_an_unknown_id_alike()
+    {
+        var (galaxy, spec) = Minimal();
+        var sim = Start(galaxy, spec);
+        Assert.Throws<ArgumentException>(() => sim.Press("warp"));
+        Assert.Throws<ArgumentException>(() => sim.Choose("warp"));
+    }
+
+    [Theory]
+    [InlineData(0, 0, 100, true)]
+    [InlineData(0, 5.1f, 100, false)]
+    [InlineData(0, 0, 3, true)] // starts and ends inside
+    public void A_swept_segment_hits_a_sphere_of_radius_5_at_the_origin(float x, float y, float startZ, bool hits) =>
+        Assert.Equal(hits, Projectile.SegmentHitsSphere(new Vector3(x, y, startZ), new Vector3(x, y, -startZ), Vector3.Zero, 5));
+
+    // A world with one asteroid of radius 20 in the starting system.
+    static (World World, Asteroid Asteroid) OneAsteroid()
+    {
+        var world = new World();
+        world.Galaxy.AsteroidField(world.Galaxy.StartingSystem, 1).AsteroidType.Radius = 20;
+        return (world, world.Sim.System.Asteroids![0]);
+    }
+
+    [Fact]
+    public void A_projectile_crossing_a_whole_asteroid_in_one_step_still_hits()
+    {
+        var (world, asteroid) = OneAsteroid();
+        var weapon = world.Galaxy.Weapon();
+        weapon.ProjectileSpeed = 100000;
+        var integrity = asteroid.Integrity;
+        world.FireAt(asteroid, weapon, byPilot: true);
+        world.Sim.Step(Dt, PilotInput.None);
+        Assert.Equal(integrity - weapon.Damage, asteroid.Integrity);
+        Assert.Empty(world.Sim.Projectiles);
+    }
+
+    [Fact]
+    public void Two_projectiles_breaking_one_asteroid_in_one_step_leave_one_fuel_pod()
+    {
+        var (world, asteroid) = OneAsteroid();
+        var weapon = world.Galaxy.Weapon();
+        weapon.Damage = asteroid.Integrity;
+        world.FireAt(asteroid, weapon, byPilot: true);
+        var second = world.FireAt(asteroid, weapon, byPilot: true);
+        world.Run(1);
+        Assert.Empty(world.Sim.System.Asteroids ?? []);
+        Assert.Single(world.Sim.System.FuelPods ?? []);
+        Assert.Contains(second, world.Sim.Projectiles); // nothing left to hit: it flies on
+    }
+
+    [Fact]
+    public void A_projectile_with_zero_velocity_does_not_produce_NaN()
+    {
+        var world = new World();
+        world.Galaxy.Weapon(world.Galaxy.StartingShipClass).ProjectileSpeed = 0;
+        world.Galaxy.RaiderPack(world.Galaxy.StartingSystem, 1);
+        var raider = world.Sim.System.RaiderShips![0];
+        world.Hold(Actions.Fire);
+        world.Run(World.StepSeconds);
+        var projectile = Assert.Single(world.Sim.Projectiles);
+        raider.Position = Vector3D.From(projectile.Position); // a target exactly where it sits
+        world.Run(1);
+        Assert.All(world.Sim.Projectiles, p => Assert.True(float.IsFinite(p.Position.LengthSquared()), $"{p.Position}"));
+        Assert.True(raider.Hull < raider.RaiderType.ShipClass.MaxHull, "the projectile sitting on the raider did not hit it");
     }
 }

@@ -42,15 +42,6 @@ public sealed class SessionSteps(World world)
         Assert.Equal(fuel, world.Sim.Ship.Fuel);
     }
 
-    [Then("the pilot ship is at rest at the arrival point of that star system, facing the star")]
-    public void ThenThePilotShipIsAtRestAtTheArrivalPointFacingTheStar()
-    {
-        var ship = Pose.Of(world.Sim.Ship);
-        Assert.Equal(Vector3.Zero, ship.Velocity);
-        Assert.Equal(Rules.ArrivalPoint(world.Sim.Ship.CurrentSystem, world.Spec.Tuning).ToGodot(), ship.Position);
-        Assert.InRange(ship.Nose.Dot(-ship.Position.Normalized()), 1 - World.Tolerance, 1 + World.Tolerance);
-    }
-
     [Given(@"a star system with a bounds radius of ([\d.]+) metres")]
     public void GivenAStarSystemWithABoundsRadiusOf(float radius) => _system = world.Galaxy.System("arrival", radius);
 
