@@ -4,3 +4,5 @@
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
+ContentFile = "res://content/core.json"
+SpecDirectory = "res://spec"

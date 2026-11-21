@@ -94,7 +94,7 @@ public static class GalaxyLoader
     static T Ref<T>(Dictionary<string, T> index, JsonNode node, string key) => Find(index, Str(node, key), key);
 
     static List<T> Refs<T>(Dictionary<string, T> index, JsonNode node, string key) =>
-        Items(node[key], id => Find(index, (string)id!, key));
+        Items(node[key], id => Find(index, id.GetValue<string>(), key));
 
     static Vector3D Vec(JsonNode node, string key)
     {

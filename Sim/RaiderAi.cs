@@ -24,8 +24,9 @@ public static class RaiderAi
 
         var attitude = raider.Orientation?.ToGodot() ?? Quaternion.Identity;
         var local = attitude.Inverse() * toPilot.Normalized(); // zero when exactly on the pilot ship: no NaN
+        var hardSide = local.X >= 0 ? -1 : 1;
         var turn = local.Z > 0 // behind: turn hard toward the nearer side
-            ? new Vector3(0, local.X >= 0 ? -1 : 1, 0)
+            ? new Vector3(0, hardSide, 0)
             : new Vector3(Mathf.Clamp(local.Y * tuning.SteeringGain, -1, 1), Mathf.Clamp(-local.X * tuning.SteeringGain, -1, 1), 0);
         var aimed = (attitude * Vector3.Forward).AngleTo(toPilot) < tuning.AimCone;
         return new RaiderIntent(turn, distance > raider.RaiderType.KeepDistance ? 1 : 0, distance < longestWeaponRange && aimed);

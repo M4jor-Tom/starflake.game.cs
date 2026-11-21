@@ -16,7 +16,6 @@ namespace Starflake.Game;
 /// </summary>
 public partial class Main : Node3D
 {
-    const string ContentPath = "res://content/core.json", SpecDirectory = "res://spec/";
     const string BootCheckArgument = "--boot-check";
     const int BootCheckFrames = 30;
 
@@ -29,6 +28,12 @@ public partial class Main : Node3D
     bool _bootCheck;
     int _frames;
 
+    /// <summary>The galaxy to load (set in Main.tscn).</summary>
+    [Export(PropertyHint.File, "*.json")] public string ContentFile { get; set; } = "";
+
+    /// <summary>The directory holding the synced spec/*.json (set in Main.tscn).</summary>
+    [Export(PropertyHint.Dir)] public string SpecDirectory { get; set; } = "";
+
     public override void _Ready() => Guard(() =>
     {
         AddChild(Scenery.Space());
@@ -39,8 +44,8 @@ public partial class Main : Node3D
         AddChild(_hud);
         AddChild(_menu);
 
-        var galaxy = GalaxyLoader.Parse(Read(ContentPath));
-        var spec = SpecLoader.Parse(SpecLoader.Files.ToDictionary(f => f, f => Read($"{SpecDirectory}{f}.json")), galaxy);
+        var galaxy = GalaxyLoader.Parse(Read(ContentFile));
+        var spec = SpecLoader.Parse(SpecLoader.Files.ToDictionary(f => f, f => Read($"{SpecDirectory}/{f}.json")), galaxy);
         InputMapper.Register(spec.Controls);
         _sim = Simulation.Start(galaxy, spec, new Random(), new InputMapper.Labels());
         Refresh();
@@ -57,9 +62,9 @@ public partial class Main : Node3D
             BootCheck();
     });
 
-    public override void _UnhandledInput(InputEvent input) => Guard(() =>
+    public override void _UnhandledInput(InputEvent @event) => Guard(() =>
     {
-        foreach (var action in _sim.Spec.Controls.Actions.Where(a => a.Kind == ActionKind.Press && input.IsActionPressed(a.Id)))
+        foreach (var action in _sim.Spec.Controls.Actions.Where(a => a.Kind == ActionKind.Press && @event.IsActionPressed(a.Id)))
             _sim.Press(action.Id);
     });
 
