@@ -7,7 +7,7 @@
 #   tools/sync-ontology.sh --content-only  # validate content after editing it
 #
 # Overrides for unpublished local checkouts:
-#   STARFLAKE_ONTOLOGY_REPO=file://$PWD/../ontology LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-ontology.sh
+#   STARFLAKE_ONTOLOGY_REPO=file://$PWD/../ontology UV_NO_CACHE=1 LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-ontology.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # shellcheck source=../ontology.lock

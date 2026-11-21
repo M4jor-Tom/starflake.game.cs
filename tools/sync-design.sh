@@ -7,7 +7,7 @@
 #
 # Overrides for unpublished local checkouts:
 #   STARFLAKE_DESIGN_REPO=file://$PWD/../design STARFLAKE_ONTOLOGY_REPO=file://$PWD/../ontology \
-#     LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-design.sh
+#     UV_NO_CACHE=1 LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-design.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # shellcheck source=../design.lock
@@ -24,14 +24,19 @@ rm -f spec/*.json Tests/Features/*.feature
 mkdir -p spec Tests/Features
 for yaml in "$tmp"/design/spec/*.yaml; do
   uv run --no-project --with pyyaml python -c \
-    'import json, sys, yaml; print(json.dumps(yaml.safe_load(open(sys.argv[1])), indent=2, ensure_ascii=False))' \
-    "$yaml" > "spec/$(basename "$yaml" .yaml).json"
+    'import json, sys, yaml; open(sys.argv[2], "w", encoding="utf-8").write(json.dumps(yaml.safe_load(open(sys.argv[1], encoding="utf-8")), indent=2, ensure_ascii=False) + "\n")' \
+    "$yaml" "spec/$(basename "$yaml" .yaml).json"
 done
 cp "$tmp"/design/features/*.feature Tests/Features/
 
 if [ "${1:-}" = --check ]; then
-  drift=$(git status --porcelain -- spec Tests/Features)
-  [ -z "$drift" ] || { echo "$drift"; exit 1; }
+  # Against the index, so staged but uncommitted files are not drift; untracked ones are.
+  untracked=$(git ls-files --others --exclude-standard -- spec Tests/Features)
+  if ! git diff --quiet -- spec Tests/Features || [ -n "$untracked" ]; then
+    git diff --stat -- spec Tests/Features
+    echo "$untracked"
+    exit 1
+  fi
   exit 0
 fi
 
