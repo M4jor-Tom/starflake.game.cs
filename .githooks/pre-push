@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Gate: the game must pass `just test` before it is pushed.
+# Enabled by `git config core.hooksPath .githooks`, which `nix develop` sets.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+if command -v just >/dev/null && command -v godot-mono >/dev/null; then
+  exec just test
+fi
+exec nix develop --command just test

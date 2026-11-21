@@ -7,11 +7,16 @@ neighbouring system once the tank holds the system's jump cost.
 ## Run
 
 ```shell
-nix develop                      # Godot .NET, .NET 8 SDK, uv
+nix develop                      # Godot .NET, .NET 8 SDK, uv, just
 dotnet build                     # compile C# (after checkout and every code change)
 godot-mono --path .              # play; or `godot-mono -e --path .` for the editor (F5 runs)
-godot-mono --headless --path . -- --self-test   # rules + scene checks, exit 1 on failure
+just test                        # every check: analyzers, self-test, content
 ```
+
+`nix develop` enables the pre-push hook in `.githooks/`, which runs `just test`.
+CI runs the same command on every pull request. The build fails on a method
+over 80 lines, a file over 1000 lines or a cognitive complexity over 15
+(SonarAnalyzer's defaults, see `.editorconfig`).
 
 Controls: W/S thrust · A/D yaw · ↑/↓ pitch · Q/E roll · Space or click fire ·
 Tab next jump target · J jump.
