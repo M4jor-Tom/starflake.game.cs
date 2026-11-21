@@ -24,16 +24,19 @@ public sealed class Camera
     public float FarPlane => _rig.FarPlane;
 
     /// <summary>Puts the camera at once at its offset from the ship.</summary>
-    internal void Snap(SpaceEntity ship) => Position = Aim(ship);
+    internal void Snap(SpaceEntity ship) => (Basis, Position) = Aim(ship);
 
-    /// <summary>Closes the gap to the offset by 1 - exp(-follow_rate * dt), whatever the step length.</summary>
-    internal void Step(SpaceEntity ship, float dt) => Position = Position.Lerp(Aim(ship), 1 - MathF.Exp(-_rig.FollowRate * dt));
+    /// <summary>Turns with the ship and closes the gap to the offset by 1 - exp(-follow_rate * dt), whatever the step length.</summary>
+    internal void Step(SpaceEntity ship, float dt)
+    {
+        (Basis, var target) = Aim(ship);
+        Position = Position.Lerp(target, 1 - MathF.Exp(-_rig.FollowRate * dt));
+    }
 
-    // Turns the camera with the ship and returns where the offset puts it.
-    Vector3 Aim(SpaceEntity ship)
+    // The ship's basis, which the camera takes, and where the offset puts the camera.
+    (Basis Basis, Vector3 Position) Aim(SpaceEntity ship)
     {
         var frame = new Transform3D(new Basis(ship.Orientation?.ToGodot() ?? Quaternion.Identity), ship.Position.ToGodot());
-        Basis = frame.Basis;
-        return frame * _rig.Offset.ToGodot();
+        return (frame.Basis, frame * _rig.Offset.ToGodot());
     }
 }
