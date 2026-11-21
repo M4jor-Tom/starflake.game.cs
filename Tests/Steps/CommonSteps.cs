@@ -18,7 +18,17 @@ public sealed class CommonSteps(World world)
         world.Run(1);
     }
 
-    [Then("^the (?:pilot )?ship is at rest at the arrival point of that star system, facing the star$")]
+    [When(@"the player presses ""([a-z_]+)""")]
+    public void WhenThePlayerPresses(string actionId) => world.Sim.Press(actionId);
+
+    [When("^the (?:pilot )?ship is destroyed and comes back at the arrival point$")]
+    public void WhenTheShipIsDestroyedAndComesBack()
+    {
+        world.HitToZero(world.Sim.Ship);
+        Assert.Equal("ship_destroyed", world.Sim.MessageId); // it was destroyed, not missed
+    }
+
+    [Then("^the (?:pilot )?ship is at rest at (?:the arrival point of that star system|the target's arrival point), facing the star$")]
     public void ThenThePilotShipIsAtRestAtTheArrivalPointFacingTheStar()
     {
         var ship = Pose.Of(world.Sim.Ship);

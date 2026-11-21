@@ -1,4 +1,5 @@
 using System;
+using Godot;
 using Starflake.Design;
 using Starflake.Domain;
 
@@ -93,4 +94,25 @@ public static class Rules
     public static bool TankFull(PilotShip ship) => ship.Fuel >= ship.ShipClass.FuelCapacity;
 
     public static bool CanJump(PilotShip ship) => ship.Fuel >= ship.CurrentSystem.JumpFuelCost;
+
+    /// <summary>Jumps to a jump target of the current star system, for the jump fuel cost of the system left.</summary>
+    /// <returns>False, and the ship unchanged, when it holds less fuel than that cost or the target is not a jump target.</returns>
+    public static bool TryJump(PilotShip ship, StarSystem target, Tuning tuning)
+    {
+        var from = ship.CurrentSystem;
+        if (!CanJump(ship) || from.JumpTargets?.Contains(target) != true)
+            return false;
+        ship.Fuel -= from.JumpFuelCost;
+        ship.CurrentSystem = target;
+        Arrive(ship, tuning);
+        return true;
+    }
+
+    /// <summary>Puts the ship at rest at the arrival point of its current star system, facing the star.</summary>
+    public static void Arrive(PilotShip ship, Tuning tuning)
+    {
+        ship.Position = ArrivalPoint(ship.CurrentSystem, tuning);
+        ship.Velocity = Vector3D.From(Vector3.Zero);
+        ship.Orientation = Attitude.From(Quaternion.Identity); // the nose, -Z, points from +Z at the star
+    }
 }

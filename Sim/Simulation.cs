@@ -17,11 +17,12 @@ public interface IKeyLabels
 /// <summary>One solo session: the galaxy state, the spec it plays by, and the pilot ship.</summary>
 public sealed class Simulation
 {
-    const string ShipDestroyed = "ship_destroyed";
+    const string ShipDestroyed = "ship_destroyed", Jumped = "jumped", JumpRefused = "jump_refused";
 
     readonly Random _rng;
     readonly Guns _guns = new();
     readonly List<Projectile> _projectiles = [];
+    int _targetIndex;
 
     Simulation(GalaxyState state, Spec spec, PilotShip ship, Random rng)
     {
@@ -29,7 +30,7 @@ public sealed class Simulation
         Spec = spec;
         Ship = ship;
         _rng = rng;
-        System = Enter(ship.CurrentSystem);
+        System = Rules.StateOf(State, ship.CurrentSystem, rng);
     }
 
     public GalaxyState State { get; }
@@ -48,7 +49,8 @@ public sealed class Simulation
     public string? MessageId { get; private set; }
 
     /// <summary>The selected jump target; null in a star system without jump targets.</summary>
-    public StarSystem? JumpTarget { get; private set; }
+    public StarSystem? JumpTarget =>
+        Ship.CurrentSystem.JumpTargets is { Count: > 0 } targets ? targets[_targetIndex % targets.Count] : null;
 
     /// <exception cref="InvalidDataException">The spec asks for another hosting mode, or lacks an action the game uses.</exception>
     public static Simulation Start(Galaxy galaxy, Spec spec, Random rng, IKeyLabels keys)
@@ -73,12 +75,6 @@ public sealed class Simulation
         return new Simulation(state, spec, ship, rng);
     }
 
-    StarSystemState Enter(StarSystem system)
-    {
-        JumpTarget = system.JumpTargets?.FirstOrDefault();
-        return Rules.StateOf(State, system, _rng);
-    }
-
     /// <summary>Advances the session by one step; each concern runs in turn.</summary>
     public void Step(float dt, PilotInput input)
     {
@@ -87,12 +83,14 @@ public sealed class Simulation
         FlyPilotShip(dt, input);
         FlyRaiderShips(dt);
         MoveProjectiles(dt);
+        FuelScoop.Step(Ship, System, dt);
     }
 
     /// <summary>Puts a fired projectile in flight in the current star system.</summary>
     public void Spawn(Projectile projectile) => _projectiles.Add(projectile);
 
-    /// <summary>Acts on a press action of the spec. An action without an effect yet does nothing.</summary>
+    /// <summary>Acts on a press action of the spec. An action without an effect yet does nothing, and so do
+    /// next_target and jump in a star system without jump targets.</summary>
     /// <exception cref="ArgumentException">The spec has no such action.</exception>
     public void Press(string actionId)
     {
@@ -100,10 +98,28 @@ public sealed class Simulation
             throw new ArgumentException($"no action '{actionId}'", nameof(actionId));
         switch (actionId)
         {
-            // next_target and jump come with the jump drive, pause with the pause menu.
-            default:
-                return;
+            case Actions.NextTarget when JumpTarget is not null:
+                _targetIndex = (_targetIndex + 1) % Ship.CurrentSystem.JumpTargets!.Count;
+                break;
+            case Actions.Jump when JumpTarget is { } target:
+                Jump(target);
+                break;
+            // pause comes with the pause menu.
         }
+    }
+
+    // The star system left keeps its state in State.SystemStates; its projectiles in flight are gone.
+    void Jump(StarSystem target)
+    {
+        if (!Rules.TryJump(Ship, target, Spec.Tuning))
+        {
+            MessageId = JumpRefused;
+            return;
+        }
+        _projectiles.Clear();
+        _targetIndex = 0;
+        System = Rules.StateOf(State, target, _rng);
+        MessageId = Jumped;
     }
 
     /// <summary>Acts on a button of the open menu; without an open menu there is nothing to choose.</summary>
@@ -185,9 +201,7 @@ public sealed class Simulation
     void Respawn()
     {
         Ship.Hull = Ship.ShipClass.MaxHull;
-        Ship.Position = Rules.ArrivalPoint(Ship.CurrentSystem, Spec.Tuning);
-        Ship.Velocity = Vector3D.From(Vector3.Zero);
-        Ship.Orientation = Attitude.From(Quaternion.Identity);
+        Rules.Arrive(Ship, Spec.Tuning);
         MessageId = ShipDestroyed;
     }
 }

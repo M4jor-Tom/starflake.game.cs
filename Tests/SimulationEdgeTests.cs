@@ -161,4 +161,18 @@ public class SimulationEdgeTests
         Assert.All(world.Sim.Projectiles, p => Assert.True(float.IsFinite(p.Position.LengthSquared()), $"{p.Position}"));
         Assert.True(raider.Hull < raider.RaiderType.ShipClass.MaxHull, "the projectile sitting on the raider did not hit it");
     }
+
+    [Fact]
+    public void A_fuel_pod_exactly_at_the_ship_is_collected_without_NaN()
+    {
+        var world = new World();
+        var ship = world.Sim.Ship;
+        var pod = new FuelPod { Id = "pod", FuelAmount = 9, Position = Vector3D.From(ship.Position.ToGodot()) };
+        (world.Sim.System.FuelPods ??= []).Add(pod);
+        world.Sim.Step(Dt, PilotInput.None);
+        Assert.Equal(pod.FuelAmount, ship.Fuel);
+        Assert.DoesNotContain(pod, world.Sim.System.FuelPods);
+        var pose = Pose.Of(ship);
+        Assert.True(float.IsFinite(pose.Position.LengthSquared() + pose.Velocity.LengthSquared() + pose.Attitude.LengthSquared()));
+    }
 }
