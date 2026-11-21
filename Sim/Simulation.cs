@@ -15,11 +15,13 @@ public sealed class Simulation
     readonly Guns _guns = new();
     readonly List<Projectile> _projectiles = [];
     readonly Hud _hud;
+    const string PauseMenu = "pause_menu", Resume = "resume", Quit = "quit";
     int _targetIndex;
 
     Simulation(GalaxyState state, Spec spec, PilotShip ship, Random rng, IKeyLabels keys)
     {
         _hud = new Hud(spec, keys);
+        Camera = new Camera(spec.Camera);
         State = state;
         Spec = spec;
         Ship = ship;
@@ -51,12 +53,21 @@ public sealed class Simulation
     /// <summary>How long the message shown now stays; 0 when none is.</summary>
     public float MessageTimeLeft => _hud.MessageTimeLeft;
 
+    /// <summary>The menu shown now; while one is, the session is paused.</summary>
+    public Menu? OpenMenu { get; private set; }
+
+    /// <summary>Set once the player has chosen to quit; the engine closes the game.</summary>
+    public bool QuitRequested { get; private set; }
+
+    /// <summary>The chase camera, moved at the end of each step.</summary>
+    public Camera Camera { get; }
+
     /// <summary>The selected jump target; null in a star system without jump targets.</summary>
     public StarSystem? JumpTarget =>
         Ship.CurrentSystem.JumpTargets is { Count: > 0 } targets ? targets[_targetIndex % targets.Count] : null;
 
-    /// <exception cref="InvalidDataException">The spec asks for another hosting mode, lacks an action, readout or message
-    /// the game uses, or has a HUD text with a placeholder that names nothing.</exception>
+    /// <exception cref="InvalidDataException">The spec asks for another hosting mode, lacks an action, readout, message,
+    /// menu or button the game uses, or has a HUD text with a placeholder that names nothing.</exception>
     public static Simulation Start(Galaxy galaxy, Spec spec, Random rng, IKeyLabels keys)
     {
         if (spec.Session.HostingMode != HostingMode.Solo)
@@ -64,6 +75,11 @@ public sealed class Simulation
         var missing = Actions.All.FirstOrDefault(id => !spec.Controls.Actions.Exists(a => a.Id == id));
         if (missing != null)
             throw new InvalidDataException($"controls.json: no action '{missing}'");
+        var menu = spec.Menus.Menus.Find(m => m.Id == PauseMenu)
+            ?? throw new InvalidDataException($"menus.json: no menu '{PauseMenu}'");
+        var button = new[] { Resume, Quit }.FirstOrDefault(id => !menu.Buttons.Exists(b => b.Id == id));
+        if (button != null)
+            throw new InvalidDataException($"menus.json: no button '{button}' in menu '{PauseMenu}'");
 
         var pilot = new Pilot { Id = "pilot-1", Name = "Pilot" };
         var hull = spec.Session.StartingShipClass;
@@ -78,41 +94,50 @@ public sealed class Simulation
         var state = new GalaxyState { Id = "solo", Galaxy = galaxy, Pilots = [pilot], PilotShips = [ship], SystemStates = [] };
         var sim = new Simulation(state, spec, ship, rng, keys);
         sim._hud.Check(sim);
+        sim.Camera.Snap(ship);
         sim.Flash(Hud.Welcome);
         return sim;
     }
 
-    /// <summary>Advances the session by one step; each concern runs in turn.</summary>
+    /// <summary>Advances the session by one step; each concern runs in turn. A paused session does not change.</summary>
     public void Step(float dt, PilotInput input)
     {
+        if (OpenMenu != null)
+            return;
+        _hud.Step(dt); // first, so a message flashed during this step is shown for its whole duration
         foreach (var shot in _guns.Step(Ship, Ship.ShipClass, input.IsHeld(Actions.Fire), Spec.Tuning.Flight, dt))
             Spawn(shot); // from where the ship is when the step begins
         FlyPilotShip(dt, input);
         FlyRaiderShips(dt);
         MoveProjectiles(dt);
         FuelScoop.Step(Ship, System, dt);
-        _hud.Step(dt);
+        Camera.Step(Ship, dt); // last, after any respawn: the camera trails the ship back instead of snapping
     }
 
     /// <summary>Puts a fired projectile in flight in the current star system.</summary>
     public void Spawn(Projectile projectile) => _projectiles.Add(projectile);
 
-    /// <summary>Acts on a press action of the spec. An action without an effect yet does nothing, and so do
-    /// next_target and jump in a star system without jump targets.</summary>
+    /// <summary>Acts on a press action of the spec. Pause opens and closes the pause menu; while it is open, nothing else
+    /// does anything. An action without an effect does nothing, and so do next_target and jump in a star system
+    /// without jump targets.</summary>
     /// <exception cref="ArgumentException">The spec has no such action.</exception>
     public void Press(string actionId)
     {
         if (!Spec.Controls.Actions.Exists(a => a.Id == actionId))
             throw new ArgumentException($"no action '{actionId}'", nameof(actionId));
+        if (OpenMenu != null && actionId != Actions.Pause)
+            return;
         switch (actionId)
         {
+            case Actions.Pause:
+                OpenMenu = OpenMenu == null ? Spec.Menu(PauseMenu) : null;
+                break;
             case Actions.NextTarget when JumpTarget is not null:
                 _targetIndex = (_targetIndex + 1) % Ship.CurrentSystem.JumpTargets!.Count;
                 break;
             case Actions.Jump when JumpTarget is { } target:
                 Jump(target);
                 break;
-            // pause comes with the pause menu.
         }
     }
 
@@ -127,17 +152,30 @@ public sealed class Simulation
         _projectiles.Clear();
         _targetIndex = 0;
         System = Rules.StateOf(State, target, _rng);
+        Camera.Snap(Ship);
         Flash(Hud.Jumped, target);
     }
 
     void Flash(string messageId, StarSystem? target = null) => _hud.Flash(messageId, this, target ?? JumpTarget);
 
-    /// <summary>Acts on a button of the open menu; without an open menu there is nothing to choose.</summary>
+    /// <summary>Acts on a button of the open menu: resume closes it, quit asks the engine to close the game.
+    /// Without an open menu there is nothing to choose.</summary>
     /// <exception cref="ArgumentException">No menu of the spec has such a button.</exception>
     public void Choose(string buttonId)
     {
         if (!Spec.Menus.Menus.Exists(m => m.Buttons.Exists(b => b.Id == buttonId)))
             throw new ArgumentException($"no menu button '{buttonId}'", nameof(buttonId));
+        if (OpenMenu == null)
+            return;
+        switch (buttonId)
+        {
+            case Resume:
+                OpenMenu = null;
+                break;
+            case Quit:
+                QuitRequested = true;
+                break;
+        }
     }
 
     void FlyPilotShip(float dt, PilotInput input)

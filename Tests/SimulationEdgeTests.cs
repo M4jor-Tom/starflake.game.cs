@@ -72,6 +72,37 @@ public class SimulationEdgeTests
         Assert.Contains(placeholder, e.Message);
     }
 
+    [Theory]
+    [InlineData("pause_menu", null)]
+    [InlineData("pause_menu", "resume")]
+    [InlineData("pause_menu", "quit")]
+    public void Start_fails_when_the_menus_spec_lacks_an_id_the_game_names(string menuId, string? buttonId)
+    {
+        var menus = Specs.Edited("menus", m =>
+        {
+            var items = m["menus"]!.AsArray();
+            var menu = items.First(i => i!["id"]!.GetValue<string>() == menuId)!;
+            if (buttonId == null)
+                items.Remove(menu);
+            else
+                menu["buttons"]!.AsArray().Remove(menu["buttons"]!.AsArray().First(b => b!["id"]!.GetValue<string>() == buttonId));
+        });
+        var (galaxy, spec) = Shipped("menus", menus);
+        var e = Assert.Throws<InvalidDataException>(() => Start(galaxy, spec));
+        Assert.Contains("menus.json", e.Message);
+        Assert.Contains($"'{buttonId ?? menuId}'", e.Message);
+    }
+
+    // Flashed during a step, after that step's countdown: the full duration, as a message flashed through Press gets.
+    [Fact]
+    public void A_message_flashed_during_a_step_is_shown_for_the_full_duration()
+    {
+        var world = new World();
+        world.HitToZero(world.Sim.Ship);
+        Assert.Equal("ship_destroyed", world.Sim.MessageId);
+        Assert.Equal(world.Spec.Hud.MessageDurationSeconds, world.Sim.MessageTimeLeft);
+    }
+
     [Fact]
     public void A_system_without_regions_or_jump_targets_simulates()
     {

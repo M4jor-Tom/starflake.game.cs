@@ -8,7 +8,6 @@ namespace Starflake.Tests.Steps;
 public sealed class RespawnSteps(World world)
 {
     World? _control; // the same star system, run without the hit
-    StarSystem? _system;
     List<SpaceEntity> _left = [];
     List<Vector3> _leftAt = [];
 
@@ -20,7 +19,6 @@ public sealed class RespawnSteps(World world)
         world.Galaxy.StartingShipClass.MaxHull = maxHull;
         var ship = world.Sim.Ship;
         ship.Fuel = fuel;
-        _system = ship.CurrentSystem;
         // Away from the arrival point, turned, and moving head-on into the -X side World.FireAt shoots from,
         // so the respawn has a pose to undo and the shot still meets the ship.
         ship.Position = new Vector3D { X = 400, Y = -300, Z = 700 };
@@ -38,8 +36,9 @@ public sealed class RespawnSteps(World world)
     [Then(@"the ship holds ([\d.]+) fuel")]
     public void ThenTheShipHoldsFuel(float fuel) => Assert.Equal(fuel, world.Sim.Ship.Fuel);
 
+    // Every scenario stating it starts there and has not jumped before.
     [Then("the ship is in the same star system")]
-    public void ThenTheShipIsInTheSameStarSystem() => Assert.Same(_system, world.Sim.Ship.CurrentSystem);
+    public void ThenTheShipIsInTheSameStarSystem() => Assert.Same(world.Galaxy.StartingSystem, world.Sim.Ship.CurrentSystem);
 
     static void Populate(World w, int asteroids, int raiders, int pods)
     {

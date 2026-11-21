@@ -41,6 +41,9 @@ public sealed class World
     /// <summary>The pilot ship's speed when the last <see cref="Run"/> began, then after each of its steps.</summary>
     public List<float> Speeds { get; } = [];
 
+    /// <summary>The camera position when the last step of the last <see cref="Run"/> began.</summary>
+    public Vector3 CameraBeforeLastStep { get; private set; }
+
     /// <summary>The steps run so far in this world.</summary>
     public int Steps { get; private set; }
 
@@ -60,6 +63,7 @@ public sealed class World
         for (var i = 0; i < StepsIn(seconds); i++)
         {
             var inFlight = Sim.Projectiles.ToHashSet();
+            CameraBeforeLastStep = Sim.Camera.Position;
             Sim.Step(StepSeconds, input);
             Steps++;
             Fired.AddRange(Sim.Projectiles.Where(p => !inFlight.Contains(p)).Select(p => (Steps, p)));

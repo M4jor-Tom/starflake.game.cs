@@ -25,6 +25,6 @@ public static class KeyNames
         { Key: PhysicalKey.Escape } => "Esc",
         { Key: { } key } => labels.LabelOf(key),
         { Button: MouseButton.Left } => "click",
-        _ => throw new InvalidDataException($"controls.json: a {binding.Device} binding without a key or button"),
+        _ => throw new InvalidDataException($"controls.json: no name for a {binding.Device} binding"),
     };
 }

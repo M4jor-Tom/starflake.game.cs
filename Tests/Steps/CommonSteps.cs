@@ -21,9 +21,13 @@ public sealed class CommonSteps(World world)
     [When(@"the player presses ""([a-z_]+)""")]
     public void WhenThePlayerPresses(string actionId) => world.Sim.Press(actionId);
 
+    // Turned away from the star first, so coming back has an attitude to undo; turning keeps the ship in the shot's path.
     [When("^the (?:pilot )?ship is destroyed and comes back at the arrival point$")]
     public void WhenTheShipIsDestroyedAndComesBack()
     {
+        world.Hold(Actions.YawLeft);
+        world.Run(1);
+        world.Hold();
         world.HitToZero(world.Sim.Ship);
         Assert.Equal("ship_destroyed", world.Sim.MessageId); // it was destroyed, not missed
     }
