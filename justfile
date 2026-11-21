@@ -14,10 +14,10 @@ acceptance: build
 boot: build
     tools/boot-check.sh
 
-# Validate content/*.json against the pinned ontology.
+# Check that Domain/Generated matches the pinned ontology and validate content/*.json against it.
 content:
-    tools/sync-ontology.sh --content-only
+    tools/sync-ontology.sh --check
 
-# Check that spec/*.json and Tests/Features match the pinned design release.
+# Check that spec/*.json, Tests/Features and Design/Generated match the pinned design release.
 design:
     tools/sync-design.sh --check
