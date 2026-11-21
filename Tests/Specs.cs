@@ -30,6 +30,14 @@ internal static class Specs
     /// <summary>The real session.json starting in the given star system.</summary>
     public static string SessionStartingIn(string system) => SessionWith("starting_system", system);
 
+    /// <summary>The real JSON text of a spec file after an edit.</summary>
+    public static string Edited(string file, Action<JsonNode> edit)
+    {
+        var node = JsonNode.Parse(Read(file))!;
+        edit(node);
+        return node.ToJsonString();
+    }
+
     /// <summary>The real controls.json without the given action.</summary>
     public static string ControlsWithout(string actionId)
     {

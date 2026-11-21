@@ -8,24 +8,18 @@ using Starflake.Domain;
 
 namespace Starflake.Sim;
 
-/// <summary>Names a physical key as the player's keyboard layout prints it; the engine knows the layout.</summary>
-public interface IKeyLabels
-{
-    string LabelOf(PhysicalKey key);
-}
-
 /// <summary>One solo session: the galaxy state, the spec it plays by, and the pilot ship.</summary>
 public sealed class Simulation
 {
-    const string ShipDestroyed = "ship_destroyed", Jumped = "jumped", JumpRefused = "jump_refused";
-
     readonly Random _rng;
     readonly Guns _guns = new();
     readonly List<Projectile> _projectiles = [];
+    readonly Hud _hud;
     int _targetIndex;
 
-    Simulation(GalaxyState state, Spec spec, PilotShip ship, Random rng)
+    Simulation(GalaxyState state, Spec spec, PilotShip ship, Random rng, IKeyLabels keys)
     {
+        _hud = new Hud(spec, keys);
         State = state;
         Spec = spec;
         Ship = ship;
@@ -45,14 +39,24 @@ public sealed class Simulation
     /// <summary>The projectiles in flight in the current star system.</summary>
     public IReadOnlyList<Projectile> Projectiles => _projectiles;
 
-    /// <summary>The id of the HUD message flashed last; null before any.</summary>
-    public string? MessageId { get; private set; }
+    /// <summary>The readouts the HUD shows now, in spec order, with their texts rendered.</summary>
+    public IReadOnlyList<ShownReadout> Readouts => _hud.Readouts(this);
+
+    /// <summary>The id of the HUD message shown now; null when none is.</summary>
+    public string? MessageId => _hud.MessageId;
+
+    /// <summary>The rendered text of the message shown now; empty when none is.</summary>
+    public string MessageText => _hud.MessageText;
+
+    /// <summary>How long the message shown now stays; 0 when none is.</summary>
+    public float MessageTimeLeft => _hud.MessageTimeLeft;
 
     /// <summary>The selected jump target; null in a star system without jump targets.</summary>
     public StarSystem? JumpTarget =>
         Ship.CurrentSystem.JumpTargets is { Count: > 0 } targets ? targets[_targetIndex % targets.Count] : null;
 
-    /// <exception cref="InvalidDataException">The spec asks for another hosting mode, or lacks an action the game uses.</exception>
+    /// <exception cref="InvalidDataException">The spec asks for another hosting mode, lacks an action, readout or message
+    /// the game uses, or has a HUD text with a placeholder that names nothing.</exception>
     public static Simulation Start(Galaxy galaxy, Spec spec, Random rng, IKeyLabels keys)
     {
         if (spec.Session.HostingMode != HostingMode.Solo)
@@ -72,7 +76,10 @@ public sealed class Simulation
             Orientation = Attitude.From(Quaternion.Identity),
         };
         var state = new GalaxyState { Id = "solo", Galaxy = galaxy, Pilots = [pilot], PilotShips = [ship], SystemStates = [] };
-        return new Simulation(state, spec, ship, rng);
+        var sim = new Simulation(state, spec, ship, rng, keys);
+        sim._hud.Check(sim);
+        sim.Flash(Hud.Welcome);
+        return sim;
     }
 
     /// <summary>Advances the session by one step; each concern runs in turn.</summary>
@@ -84,6 +91,7 @@ public sealed class Simulation
         FlyRaiderShips(dt);
         MoveProjectiles(dt);
         FuelScoop.Step(Ship, System, dt);
+        _hud.Step(dt);
     }
 
     /// <summary>Puts a fired projectile in flight in the current star system.</summary>
@@ -113,14 +121,16 @@ public sealed class Simulation
     {
         if (!Rules.TryJump(Ship, target, Spec.Tuning))
         {
-            MessageId = JumpRefused;
+            Flash(Hud.JumpRefused);
             return;
         }
         _projectiles.Clear();
         _targetIndex = 0;
         System = Rules.StateOf(State, target, _rng);
-        MessageId = Jumped;
+        Flash(Hud.Jumped, target);
     }
+
+    void Flash(string messageId, StarSystem? target = null) => _hud.Flash(messageId, this, target ?? JumpTarget);
 
     /// <summary>Acts on a button of the open menu; without an open menu there is nothing to choose.</summary>
     /// <exception cref="ArgumentException">No menu of the spec has such a button.</exception>
@@ -208,6 +218,6 @@ public sealed class Simulation
     {
         Ship.Hull = Ship.ShipClass.MaxHull;
         Rules.Arrive(Ship, Spec.Tuning);
-        MessageId = ShipDestroyed;
+        Flash(Hud.ShipDestroyed);
     }
 }

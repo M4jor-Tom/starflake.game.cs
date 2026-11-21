@@ -119,10 +119,13 @@ public readonly record struct Pose(Vector3 Position, Vector3 Velocity, Quaternio
     public Vector3 Nose => Attitude * Vector3.Forward;
 }
 
-/// <summary>A keyboard layout that prints each physical key under its own name.</summary>
+/// <summary>The player's keyboard layout: the label printed on each physical key, which the Givens set.
+/// Each key starts labelled with its enum name, a label no scenario states; an unset key throws.</summary>
 public sealed class FakeKeyLabels : IKeyLabels
 {
-    public string LabelOf(PhysicalKey key) => key.ToString();
+    public Dictionary<PhysicalKey, string> Labels { get; } = Enum.GetValues<PhysicalKey>().ToDictionary(k => k, k => k.ToString());
+
+    public string LabelOf(PhysicalKey key) => Labels[key];
 }
 
 /// <summary>

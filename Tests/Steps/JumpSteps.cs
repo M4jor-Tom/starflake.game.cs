@@ -10,6 +10,7 @@ public sealed class JumpSteps(World world)
 {
     StarSystem? _target;
     (StarSystem System, float Fuel, Pose Pose, string? Message)? _before;
+    float _messageTimeLeftBefore;
 
     StarSystem Home => world.Galaxy.StartingSystem;
 
@@ -23,6 +24,7 @@ public sealed class JumpSteps(World world)
         ship.Velocity = new Vector3D { X = 23, Y = 0, Z = -41 };
         ship.Orientation = Attitude.From(new Quaternion(Vector3.Up, 0.8f));
         _before = (ship.CurrentSystem, ship.Fuel, Pose.Of(ship), world.Sim.MessageId);
+        _messageTimeLeftBefore = world.Sim.MessageTimeLeft;
     }
 
     // Two jump targets of the starting system, each with two of its own, and fuel to spare.
@@ -115,7 +117,7 @@ public sealed class JumpSteps(World world)
     [Then("nothing happens and the HUD flashes no message")]
     public void ThenNothingHappensAndTheHudFlashesNoMessage()
     {
-        ThenNothingHappens();
-        Assert.Null(world.Sim.MessageId);
+        ThenNothingHappens(); // the same message as before, which a new flash would have replaced
+        Assert.Equal(_messageTimeLeftBefore, world.Sim.MessageTimeLeft); // nor restarted
     }
 }

@@ -44,6 +44,34 @@ public class SimulationEdgeTests
         Assert.Contains("jump", e.Message);
     }
 
+    [Theory]
+    [InlineData("readouts", "fuel_tank_full")]
+    [InlineData("messages", "jumped")]
+    public void Start_fails_when_the_hud_spec_lacks_an_id_the_game_names(string list, string id)
+    {
+        var hud = Specs.Edited("hud", h =>
+        {
+            var items = h[list]!.AsArray();
+            items.Remove(items.First(i => i!["id"]!.GetValue<string>() == id));
+        });
+        var (galaxy, spec) = Shipped("hud", hud);
+        var e = Assert.Throws<InvalidDataException>(() => Start(galaxy, spec));
+        Assert.Contains("hud.json", e.Message);
+        Assert.Contains($"'{id}'", e.Message);
+    }
+
+    [Theory]
+    [InlineData("readouts", "{warp_factor}")]
+    [InlineData("readouts", "{key:warp}")]
+    [InlineData("messages", "{warp_factor}")]
+    public void Start_fails_on_a_hud_text_with_a_placeholder_that_names_nothing(string list, string placeholder)
+    {
+        var (galaxy, spec) = Shipped("hud", Specs.Edited("hud", h => h[list]![0]!["text"] = placeholder));
+        var e = Assert.Throws<InvalidDataException>(() => Start(galaxy, spec));
+        Assert.Contains("hud.json", e.Message);
+        Assert.Contains(placeholder, e.Message);
+    }
+
     [Fact]
     public void A_system_without_regions_or_jump_targets_simulates()
     {

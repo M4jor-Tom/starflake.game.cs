@@ -33,9 +33,22 @@ internal static class Json
     public static T Enum<T>(JsonNode node, string key) where T : struct, System.Enum
     {
         var text = Str(node, key);
+        return TryEnum<T>(text, out var value) ? value : throw new InvalidDataException($"{key}: unknown value '{text}'");
+    }
+
+    public static bool TryEnum<T>(string text, out T value) where T : struct, System.Enum
+    {
         foreach (var field in typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static))
             if (field.GetCustomAttribute<EnumMemberAttribute>()?.Value == text)
-                return (T)field.GetValue(null)!;
-        throw new InvalidDataException($"{key}: unknown value '{text}'");
+            {
+                value = (T)field.GetValue(null)!;
+                return true;
+            }
+        value = default;
+        return false;
     }
+
+    /// <summary>The schema text of an enum member, e.g. "g" for SpectralClass.G.</summary>
+    public static string SchemaText<T>(T value) where T : struct, System.Enum =>
+        typeof(T).GetField(value.ToString())!.GetCustomAttribute<EnumMemberAttribute>()!.Value!;
 }
