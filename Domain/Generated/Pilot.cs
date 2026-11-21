@@ -6,8 +6,8 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// A person taking part in a session. Its name is shown to other players.
+/// A person who flies a ship. Other pilots know them by name.
 /// </summary>
-public partial class Player : NamedThing
+public partial class Pilot : NamedThing
 {
 }

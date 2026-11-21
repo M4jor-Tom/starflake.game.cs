@@ -6,9 +6,9 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// A ship flown by a player.
+/// A ship flown by a pilot.
 /// </summary>
-public partial class PlayerShip : Ship
+public partial class PilotShip : Ship
 {
     /// <summary>
     /// The hull design.
@@ -16,9 +16,9 @@ public partial class PlayerShip : Ship
     public required ShipClass ShipClass { get; set; }
 
     /// <summary>
-    /// The player flying the ship.
+    /// The pilot flying the ship.
     /// </summary>
-    public required Player Pilot { get; set; }
+    public required Pilot Pilot { get; set; }
 
     /// <summary>
     /// The star system the ship is in.

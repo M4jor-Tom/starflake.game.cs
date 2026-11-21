@@ -28,5 +28,5 @@ if [ "${1:-}" != --content-only ]; then
 fi
 
 for content in content/*.json; do
-  uvx --from "linkml==$LINKML_VERSION" linkml-validate -s "$schema" -C ContentPack "$content"
+  uvx --from "linkml==$LINKML_VERSION" linkml-validate -s "$schema" -C Galaxy "$content"
 done

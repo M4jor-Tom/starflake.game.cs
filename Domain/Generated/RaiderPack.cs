@@ -6,12 +6,12 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// A region where enemies of one type spawn.
+/// A region that raiders of one type hold.
 /// </summary>
-public partial class EnemyGroup : SpawnRegion
+public partial class RaiderPack : Region
 {
     /// <summary>
-    /// The enemy archetype.
+    /// The raider archetype.
     /// </summary>
-    public required EnemyType EnemyType { get; set; }
+    public required RaiderType RaiderType { get; set; }
 }

@@ -8,7 +8,7 @@ namespace Starflake.Domain;
 /// <summary>
 /// A region filled with asteroids of one type.
 /// </summary>
-public partial class AsteroidField : SpawnRegion
+public partial class AsteroidField : Region
 {
     /// <summary>
     /// The kind of asteroid.

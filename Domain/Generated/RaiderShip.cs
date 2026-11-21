@@ -6,12 +6,12 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// A hostile AI ship. Its hull design comes from its enemy type.
+/// A hostile ship. Its hull design comes from its raider type.
 /// </summary>
-public partial class EnemyShip : Ship
+public partial class RaiderShip : Ship
 {
     /// <summary>
-    /// The enemy archetype.
+    /// The raider archetype.
     /// </summary>
-    public required EnemyType EnemyType { get; set; }
+    public required RaiderType RaiderType { get; set; }
 }

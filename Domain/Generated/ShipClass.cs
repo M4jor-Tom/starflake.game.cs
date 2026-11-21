@@ -6,7 +6,7 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// A hull design that player and enemy ships are built from.
+/// A hull design that pilot and raider ships are built from.
 /// </summary>
 public partial class ShipClass : NamedThing
 {
@@ -34,6 +34,21 @@ public partial class ShipClass : NamedThing
     /// Maximum fuel the tank holds. Zero for ships that never jump.
     /// </summary>
     public required float FuelCapacity { get; set; }
+
+    /// <summary>
+    /// Distance within which the fuel scoop takes in a fuel pod. Zero for ships without a scoop.
+    /// </summary>
+    public required float ScoopRadius { get; set; }
+
+    /// <summary>
+    /// Distance within which the ship pulls fuel pods toward itself.
+    /// </summary>
+    public required float TractorRange { get; set; }
+
+    /// <summary>
+    /// Speed at which a pulled fuel pod moves toward the ship.
+    /// </summary>
+    public required float TractorSpeed { get; set; }
 
     /// <summary>
     /// Weapons mounted on every ship of this class.

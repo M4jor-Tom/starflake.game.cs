@@ -6,12 +6,12 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// A sphere inside a star system where a number of entities spawn when the system state is first created.
+/// A sphere inside a star system that holds a number of bodies.
 /// </summary>
-public abstract partial class SpawnRegion
+public abstract partial class Region
 {
     /// <summary>
-    /// Radius of the spawn sphere.
+    /// Radius of the region.
     /// </summary>
     public required float Radius { get; set; }
 
@@ -21,7 +21,7 @@ public abstract partial class SpawnRegion
     public required Vector3D Center { get; set; }
 
     /// <summary>
-    /// Number of entities spawned in the region.
+    /// Number of bodies the region holds.
     /// </summary>
-    public required int SpawnCount { get; set; }
+    public required int Count { get; set; }
 }

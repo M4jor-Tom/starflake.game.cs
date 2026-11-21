@@ -6,12 +6,12 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// Fuel floating in space, collected by flying a player ship into it.
+/// Fuel floating in space, scooped up by a pilot ship that flies into it.
 /// </summary>
-public partial class LootDrop : SpaceEntity
+public partial class FuelPod : SpaceEntity
 {
     /// <summary>
-    /// Fuel collected by picking up this drop.
+    /// Fuel the pod holds.
     /// </summary>
     public required float FuelAmount { get; set; }
 }

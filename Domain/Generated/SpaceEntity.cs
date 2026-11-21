@@ -6,7 +6,7 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// Anything with a physical presence in a star system. The identifier doubles as the network id in multiplayer.
+/// Anything with a physical presence in a star system.
 /// </summary>
 public abstract partial class SpaceEntity
 {

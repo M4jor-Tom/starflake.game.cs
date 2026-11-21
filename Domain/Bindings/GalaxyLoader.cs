@@ -1,22 +1,19 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.Serialization;
 using System.Text.Json.Nodes;
+using static Starflake.Domain.Json;
 
 namespace Starflake.Domain;
 
 /// <summary>
-/// Builds a <see cref="ContentPack"/> from its JSON form. The shape is validated
+/// Builds a <see cref="Galaxy"/> from its JSON form. The shape is validated
 /// against the ontology by tools/sync-ontology.sh; this loader also resolves
 /// references by identifier, which LinkML validation does not check.
 /// Hand-written binding: update it when the ontology changes.
 /// </summary>
-public static class ContentLoader
+public static class GalaxyLoader
 {
-    public static ContentPack Parse(string json)
+    public static Galaxy Parse(string json)
     {
         var root = JsonNode.Parse(json) ?? throw new InvalidDataException("empty content");
 
@@ -36,25 +33,28 @@ public static class ContentLoader
             Acceleration = Num(s, "acceleration"),
             TurnRate = Num(s, "turn_rate"),
             FuelCapacity = Num(s, "fuel_capacity"),
+            ScoopRadius = Num(s, "scoop_radius"),
+            TractorRange = Num(s, "tractor_range"),
+            TractorSpeed = Num(s, "tractor_speed"),
             Weapons = Refs(weapons, s, "weapons"),
         });
-        var enemies = Index(root["enemy_types"], e => new EnemyType
+        var raiders = Index(root["raider_types"], r => new RaiderType
         {
-            Id = Str(e, "id"), Name = Str(e, "name"), Description = (string?)e["description"],
-            ShipClass = Ref(ships, e, "ship_class"),
-            DetectionRange = Num(e, "detection_range"),
-            FuelDrop = Num(e, "fuel_drop"),
+            Id = Str(r, "id"), Name = Str(r, "name"), Description = (string?)r["description"],
+            ShipClass = Ref(ships, r, "ship_class"),
+            DetectionRange = Num(r, "detection_range"),
+            KeepDistance = Num(r, "keep_distance"),
+            FuelYield = Num(r, "fuel_yield"),
         });
         var asteroids = Index(root["asteroid_types"], a => new AsteroidType
         {
             Id = Str(a, "id"), Name = Str(a, "name"), Description = (string?)a["description"],
             Radius = Num(a, "radius"),
             MaxIntegrity = Num(a, "max_integrity"),
-            FuelDrop = Num(a, "fuel_drop"),
+            FuelYield = Num(a, "fuel_yield"),
         });
 
-        var galaxy = root["galaxy"] ?? throw new InvalidDataException("missing galaxy");
-        var systems = Index(galaxy["star_systems"], s => new StarSystem
+        var systems = Index(root["star_systems"], s => new StarSystem
         {
             Id = Str(s, "id"), Name = Str(s, "name"), Description = (string?)s["description"],
             StarClass = Enum<SpectralClass>(s, "star_class"),
@@ -66,70 +66,39 @@ public static class ContentLoader
                 AsteroidType = Ref(asteroids, f, "asteroid_type"),
                 Center = Vec(f, "center"),
                 Radius = Num(f, "radius"),
-                SpawnCount = (int)Num(f, "spawn_count"),
+                Count = (int)Num(f, "count"),
             }),
-            EnemyGroups = Items(s["enemy_groups"], g => new EnemyGroup
+            RaiderPacks = Items(s["raider_packs"], p => new RaiderPack
             {
-                EnemyType = Ref(enemies, g, "enemy_type"),
-                Center = Vec(g, "center"),
-                Radius = Num(g, "radius"),
-                SpawnCount = (int)Num(g, "spawn_count"),
+                RaiderType = Ref(raiders, p, "raider_type"),
+                Center = Vec(p, "center"),
+                Radius = Num(p, "radius"),
+                Count = (int)Num(p, "count"),
             }),
         });
         // Systems reference each other: link jump routes once all of them exist.
-        foreach (var s in Items(galaxy["star_systems"], s => s))
+        foreach (var s in Items(root["star_systems"], s => s))
             systems[Str(s, "id")].JumpTargets!.AddRange(Refs(systems, s, "jump_targets"));
 
-        return new ContentPack
+        return new Galaxy
         {
             Id = Str(root, "id"), Name = Str(root, "name"), Description = (string?)root["description"],
             WeaponTypes = [.. weapons.Values],
             ShipClasses = [.. ships.Values],
-            EnemyTypes = [.. enemies.Values],
+            RaiderTypes = [.. raiders.Values],
             AsteroidTypes = [.. asteroids.Values],
-            StartingShipClass = Ref(ships, root, "starting_ship_class"),
-            Galaxy = new Galaxy
-            {
-                Id = Str(galaxy, "id"), Name = Str(galaxy, "name"), Description = (string?)galaxy["description"],
-                StarSystems = [.. systems.Values],
-                StartingSystem = Ref(systems, galaxy, "starting_system"),
-            },
+            StarSystems = [.. systems.Values],
         };
     }
-
-    static List<T> Items<T>(JsonNode? list, Func<JsonNode, T> build) =>
-        list?.AsArray().Select(n => build(n!)).ToList() ?? [];
-
-    static Dictionary<string, T> Index<T>(JsonNode? list, Func<JsonNode, T> build) where T : NamedThing =>
-        Items(list, build).ToDictionary(t => t.Id);
-
-    static T Find<T>(Dictionary<string, T> index, string id, string key) =>
-        index.TryGetValue(id, out var found) ? found : throw new InvalidDataException($"{key}: unknown id '{id}'");
 
     static T Ref<T>(Dictionary<string, T> index, JsonNode node, string key) => Find(index, Str(node, key), key);
 
     static List<T> Refs<T>(Dictionary<string, T> index, JsonNode node, string key) =>
         Items(node[key], id => Find(index, (string)id!, key));
 
-    static string Str(JsonNode node, string key) =>
-        (string?)node[key] ?? throw new InvalidDataException($"missing {key}");
-
-    static float Num(JsonNode node, string key) =>
-        (float?)node[key] ?? throw new InvalidDataException($"missing {key}");
-
     static Vector3D Vec(JsonNode node, string key)
     {
         var v = node[key] ?? throw new InvalidDataException($"missing {key}");
         return new Vector3D { X = Num(v, "x"), Y = Num(v, "y"), Z = Num(v, "z") };
-    }
-
-    // Enum members carry their schema text in [EnumMember], e.g. SpectralClass.G <- "g".
-    static T Enum<T>(JsonNode node, string key) where T : struct, System.Enum
-    {
-        var text = Str(node, key);
-        foreach (var field in typeof(T).GetFields(BindingFlags.Public | BindingFlags.Static))
-            if (field.GetCustomAttribute<EnumMemberAttribute>()?.Value == text)
-                return (T)field.GetValue(null)!;
-        throw new InvalidDataException($"{key}: unknown value '{text}'");
     }
 }

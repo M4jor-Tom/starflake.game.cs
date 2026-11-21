@@ -1,13 +1,14 @@
-# Run every check: analyzers, the self-test and the content.
-test: build self-test content
+# Run every check: analyzers, the acceptance scenarios and the content.
+test: build acceptance content
 
-# Compile the C#. Analyzer findings and warnings fail the build.
+# Compile the C# and the tests. Analyzer findings and warnings fail the build.
 build:
     dotnet build
+    dotnet build Tests
 
-# Run the rules and scene checks in a headless Godot.
-self-test: build
-    godot-mono --headless --path . -- --self-test
+# Run the unit tests and acceptance scenarios.
+acceptance: build
+    dotnet test Tests --no-build
 
 # Validate content/*.json against the pinned ontology.
 content:

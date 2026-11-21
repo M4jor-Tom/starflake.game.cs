@@ -6,7 +6,7 @@
 namespace Starflake.Domain;
 
 /// <summary>
-/// One playable area around a star. A player ship can jump to any system in jump_targets once it carries at least jump_fuel_cost fuel.
+/// The space around one star. A pilot ship can jump to any system in jump_targets once it carries at least jump_fuel_cost fuel.
 /// </summary>
 public partial class StarSystem : NamedThing
 {
@@ -16,7 +16,7 @@ public partial class StarSystem : NamedThing
     public required SpectralClass StarClass { get; set; }
 
     /// <summary>
-    /// Radius of the playable sphere centred on the star.
+    /// Radius of the navigable sphere centred on the star.
     /// </summary>
     public required float BoundsRadius { get; set; }
 
@@ -31,12 +31,12 @@ public partial class StarSystem : NamedThing
     public global::System.Collections.Generic.List<StarSystem>? JumpTargets { get; set; }
 
     /// <summary>
-    /// Asteroid spawn regions in this system.
+    /// Asteroid fields of this system.
     /// </summary>
     public global::System.Collections.Generic.List<AsteroidField>? AsteroidFields { get; set; }
 
     /// <summary>
-    /// Enemy spawn regions in this system.
+    /// Raider packs of this system.
     /// </summary>
-    public global::System.Collections.Generic.List<EnemyGroup>? EnemyGroups { get; set; }
+    public global::System.Collections.Generic.List<RaiderPack>? RaiderPacks { get; set; }
 }
