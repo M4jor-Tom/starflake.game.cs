@@ -86,3 +86,8 @@ of serving a stale cached build:
 UV_NO_CACHE=1 LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-ontology.sh
 UV_NO_CACHE=1 LINKML_CSHARP_SOURCE=../../linkml-csharp tools/sync-design.sh
 ```
+
+## Reporting a problem
+
+Report problems and ideas for any part of Starflake in one place:
+<https://github.com/M4jor-Tom/starflake/issues/new/choose>.
